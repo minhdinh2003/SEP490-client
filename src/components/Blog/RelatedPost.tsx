@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-
+// fix post 
 const RelatedPost = ({
   image,
   slug,
