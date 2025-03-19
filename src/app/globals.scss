@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@layer utilities {
+  @media (max-width: 767px) {
+    .responsive-table .table-header {
+      @apply hidden;
+    }
+    .responsive-table .table-row {
+      @apply block;
+    }
+    .responsive-table .table-row .col {
+      @apply block w-full py-2;
+    }
+    .responsive-table .table-row .col::before {
+      @apply text-gray-600 pr-2 content-[attr(data-label)];
+    }
+  }
+}
+.fade{
+ animation:  fadeAnimation 1000 ease-in-out;
+}
+@keyframes fadeAnimation{
+    0%{
+        opacity: 0;
+    }
+    100%{
+        opacity: 1;
+    }
+}
+.swiper-button-prev{
+ width: 300px;
+ height: 300px;
+}
+.chat-box::-webkit-scrollbar {
+    width: 5px; /* Width of the scrollbar */
+  }
+  
+  .chat-box::-webkit-scrollbar-track {
+    background:  #abaaaa; /* Background of the scrollbar track */
+    border-radius: 2px; /* Rounding the corners */
+  }
+  
+  .chat-box::-webkit-scrollbar-thumb {
+    background: #abaaaa; /* Color of the scrollbar thumb */
+    border-radius: 2px; /* Rounding the corners */
+  }
+  
+  .chat-box::-webkit-scrollbar-thumb:hover {
+    background: #abaaaa; /* Color when hovered */
+  }
+
+
+  
+
+  .no-scroll {
+    overflow: hidden;
+  }
+
+  .tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+  }
+
+  .tooltip .tooltiptext {
+    visibility: hidden;
+    width: 100px;
+    background-color: rgb(47, 45, 45);
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 0;
+    position: absolute;
+    z-index: 1000000;
+    bottom: 125%; /* Position the tooltip above the text */
+    left: 50%;
+    margin-left: -60px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 13px;
+  }
+
+  .tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .scroll-snap-x {
+    scroll-snap-type: x mandatory;
+  }
+  
+  .scroll-snap-align-center {
+    scroll-snap-align: center;
+  }
+  html{
+    // font-family: ro !important;
+  }
+
+  .shadow{
+    box-shadow: 0px 0px 25px rgba(0, 0, 0, 0.1);
+  }
+  tr:nth-child(odd):not(:first-child) {
+    background-color: #ffffff;
+    // box-shadow: 0px 0px 25px rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid rgb(235, 229, 229);
+  }
+  tr:nth-child(odd){
+    border-bottom: 1px solid rgb(235, 229, 229);
+
+  }
+  
+  
+  
+  /* Áp dụng kiểu cho các dòng chẵn */
+  tr:nth-child(even) {
+    background-color: rgb(246, 244, 244);
+    // border: none !important;
+    // box-shadow: 0px 0px 25px rgba(216, 212, 212, 0.1);
+    margin-top: 100px !important;
+    border-bottom: 1px solid rgb(235, 229, 229);
+
+  }
+  td{
+    // border: none !important;
+  }
+thead{
+  padding-block: 5px !important;
+  background-color: rgb(23, 22, 22);
+  text-transform: uppercase;
+  font-weight: bold;
+  color: white;
+  border-bottom: 1px solid rgb(235, 229, 229);
+
+}
+ 
