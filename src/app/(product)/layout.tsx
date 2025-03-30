@@ -16,17 +16,13 @@ const pages: {
   link: Route;
 }[] = [
   {
-    name: "Đăng sản phẩm",
+    name: "Tạo đợt khuyến mại",
     link: "/create-product",
   },
   // {
-  //   name: "Danh sách yêu thích",
-  //   link: "/account-savelists",
+  //   name: "Danh sách khuyến mại",
+  //   link: "/my-product",
   // },
-  {
-    name: "Sản phẩm của tôi",
-    link: "/my-product",
-  },
  
 ];
 
@@ -39,7 +35,7 @@ const LayoutProduct: FC<CommonLayoutProps> = ({ children }) => {
       <div className="mt-14 sm:mt-20">
         <div className="mx-auto">
           <div className="max-w-2xl">
-            <h2 className="text-3xl xl:text-4xl font-semibold">Quản lý sản phẩm</h2>
+            <h2 className="text-3xl xl:text-4xl font-semibold">Quản lý khuyến mại</h2>
           </div>
           <hr className="mt-10 border-slate-200 dark:border-slate-700"></hr>
 
