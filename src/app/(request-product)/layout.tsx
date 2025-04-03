@@ -16,46 +16,56 @@ const pages: {
   name: string;
   link: Route;
   hide?: boolean;
+  role?: any;
 }[] = [
   {
-    name: "Sản phẩm đã yêu cầu",
+    name: "Yêu cầu đã tạo",
     link: "/my-request",
+    role: ["USER"]
   },
   {
     name: "Sản phẩm được yêu cầu",
     link: "/request-list",
-    hide: true,
+    role: ["OWNER"]
   },
   {
-    name: "Chính sách sản phẩm",
-    link: "/policy-list",
-    hide: true,
+    name: "Danh sách Task",
+    link: "/task-list",
+    role: ["EMPLOYEE"]
   },
-
-  
-  
- 
+  {
+    name: "Tạo yêu cầu sửa chữa",
+    link: "/create-request",
+    role: ["USER"]
+  },
+  {
+    name: "Tạo yêu cầu sửa chữa",
+    link: "/owner-request",
+    role: ["OWNER"]
+  }
 ];
 
 const CommonLayout: FC<CommonLayoutProps> = ({ children }) => {
-const auth: any = useAuthStore();
-  const IsCreator = auth?.IsCreator as boolean;
+  const auth: any = useAuthStore();
+  const role = auth?.user?.role;
   const pathname = usePathname();
   const userStorage: any = useAuthStore();
-  
+
   return (
     <div className="nc-AccountCommonLayout container">
       <div className="mt-14 sm:mt-20">
         <div className=" mx-auto">
           <div className="">
-            <h2 className="text-3xl xl:text-4xl font-semibold">Sản phẩm yêu cầu</h2>
+            <h2 className="text-3xl xl:text-4xl font-semibold">
+              Yêu cầu sửa
+            </h2>
           </div>
           <hr className="mt-10 border-slate-200 dark:border-slate-700"></hr>
 
           <div className="flex space-x-8 md:space-x-14 overflow-x-auto hiddenScrollbar">
             {pages
               .filter((i: any) => {
-                if (i.hide && !IsCreator) {
+                if (!i.role.includes(role)) {
                   return false;
                 }
                 return true;
