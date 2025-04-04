@@ -13,10 +13,10 @@ const ErrorPayment = () => (
        <Image width={200} height={200} src={"/err.png"} alt="not-found" />
        </div>
         <span className="block text-sm text-neutral-800 sm:text-base dark:text-neutral-200 tracking-wider font-medium">
-          {`THANH TOÁN THẤT BẠI`}{" "}
+          {`PAYMENT FAILED`}{" "}
         </span>
         <div className="pt-8">
-          <ButtonPrimary href="/">Về trang chủ</ButtonPrimary>
+          <ButtonPrimary href="/">Back to home</ButtonPrimary>
         </div>
       </header>
     </div>
