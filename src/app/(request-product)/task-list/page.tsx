@@ -14,23 +14,19 @@ import {
   RequestStatus,
 } from "@/utils/helpers";
 import { ButtonIcon } from "@/shared/Button/CustomButton";
-import CreateWork from "../component/CreateJob";
 import useMessageStore from "@/store/useMessStore";
 import ModalMessage from "@/components/ModalMessage";
 import { useSearchParams } from "next/navigation";
-import RequestService from "@/http/requestService";
 import { ServiceResponse } from "@/type/service.response";
 import { IPagingParam } from "@/contains/paging";
 import TaskDetailService from "@/http/taskDetailService";
 import WorkDetail from "../component/WorkDetail";
+import ButtonPrimary from "@/shared/Button/ButtonPrimary";
+import OwnerCreateJob from "../component/OwnerCreateJob";
 
 const RequestList = () => {
-  const [openPrice, setOpenPrice] = useState(false);
-  const [openReject, setOpenReject] = useState(false);
-  const [idPrice, setIdPrice] = useState("");
   const [isDatcoc, setIsDatcoc] = useState(false);
   const [openModal, setOpenModal] = useState(false);
-  const [openWork, setOpenModalWork] = useState(false);
   const [idWork, setIdWork] = useState("");
   const [images, setImages] = useState("");
   const userStore: any = useAuthStore();
@@ -40,7 +36,7 @@ const RequestList = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleOpenModal = () => {
-    setIsModalOpen(true);
+    setOpenModal(true);
   };
   const messStore: any = useMessageStore();
   const [idMess, setIdMess] = useState("");
@@ -61,8 +57,8 @@ const RequestList = () => {
           {
             key: "assignedTo",
             condition: "equal",
-            value: userStore.user.id
-          }
+            value: userStore.user.id,
+          },
         ],
         searchKey: "",
         searchFields: [],
@@ -126,7 +122,6 @@ const RequestList = () => {
         </td>
         <td className=" min-w-[200px] p-4 border-b border-blue-gray-50 flex ">
           <div className=" flex items-center gap-3">
-
             <ButtonIcon
               onClick={() => {
                 setOpenWorkDetail(true);
@@ -158,10 +153,20 @@ const RequestList = () => {
         onClose={handleCloseModal}
         idRequest={idMess}
       />
-      <main className="  ">
+      <div className="flex justify-end items-center mb-4">
+        <ButtonPrimary
+          onClick={() => {
+            handleOpenModal();
+          }}
+        >
+          Tạo task
+        </ButtonPrimary>
+      </div>
+
+      <main className="w-full  ">
         {(finalList as any)?.length > 0 ? (
-          <div className="flex  bg-white">
-            <div className="px-0">
+          <div className="flex  bg-white w-full">
+            <div className="px-0 w-full">
               <table className="w-full min-w-full table-auto text-left">
                 <thead>
                   <tr>
@@ -214,12 +219,12 @@ const RequestList = () => {
         onCloseModal={() => setOpenModal(false)}
         customClass="abc"
         renderContent={() => (
-          <CreateWork
+          <OwnerCreateJob
             callback={() => {
               setOpenModal(false);
               setCurrentId("");
+              getListRequest();
             }}
-            idRequest={currentId}
           />
         )}
         modalTitle="Tạo công việc"

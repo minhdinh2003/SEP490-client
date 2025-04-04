@@ -9,7 +9,7 @@ const TabOrder = ({activeTab,setActiveTab}:any) => {
   return (
     <div className="border-b border-gray-300 bg-white">
       <div className="flex justify-center">
-        {["Sản phẩm", "Sản phẩm yêu cầu riêng"].map((tab,index) => (
+        {["Sản phẩm", "Sản phẩm sửa chữa"].map((tab,index) => (
           <div
             key={tab}
             onClick={() => handleTabClick(index)}

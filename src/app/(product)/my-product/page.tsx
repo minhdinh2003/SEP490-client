@@ -8,7 +8,7 @@ import { handleErrorHttp } from "@/utils/handleError";
 import Image from "next/image";
 import { useState } from "react";
 import toast from "react-hot-toast";
-import UploadProduct from "../create-product/page";
+import UploadProduct from "../create-promotion/page";
 import Status from "@/shared/Status/Status";
 import { formatPriceVND } from "@/utils/helpers";
 
@@ -38,7 +38,7 @@ const MyProduct = () => {
     }
   };
   const reversedList = (listproduct as any)?.slice().reverse()?.filter((i: any) => i.ProductType == 0);
-console.log(listproduct)
+
   const renderListTable = () =>
     reversedList?.map((product: any, index: number) => (
       <tr key={index}>

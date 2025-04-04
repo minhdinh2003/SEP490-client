@@ -2,26 +2,16 @@
 import Prices from "@/components/Prices";
 import { PAYMENT_METHOD, SHIPING_STATUS } from "@/contains/contants";
 import WithHydration from "@/HOC/withHydration";
-import { useGetData } from "@/hooks/useGetData";
 import http from "@/http/http";
-import ButtonPrimary from "@/shared/Button/ButtonPrimary";
-import ButtonSecondary from "@/shared/Button/ButtonSecondary";
 import useAuthStore from "@/store/useAuthStore";
 import { handleErrorHttp } from "@/utils/handleError";
 import {
   dateFormat2,
-  formatAddress,
-  getShippingStatusColor,
   getUrlImage,
-  OrderStatus,
-  ShippingStatus,
-  ShippingStatusDetails,
   StatusOrder,
   StatusOrderDetails,
 } from "@/utils/helpers";
-import { assert } from "console";
 import Image from "next/image";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import React from "react";
@@ -105,7 +95,8 @@ const OrderDetail = ({ }) => {
           include: {
             product: true
           }
-        }
+        },
+        Request: true
       });
       setOrder(res.payload.data);
     } catch (error: any) {
@@ -161,6 +152,43 @@ const OrderDetail = ({ }) => {
               <p className="text-gray-500 dark:text-slate-400 flex items-center">
                 <span className="inline-block ">x</span>
                 <span className="ml-2">{item?.quantity}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  const renderProductRequest = (data: any) => {
+    return (
+      <div className="pb-10 border-b pt-5 last:border-b-0">
+
+        <div key={1} className="flex ">
+          <div className="relative h-24 w-16 sm:w-20 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100">
+            <Image
+              fill
+              sizes="100px"
+              src={getUrlImage(data?.imageRepairs).mainImage}
+              alt={data.description}
+              className="h-full w-full object-cover object-center"
+            />
+          </div>
+
+          <div className="ml-4 flex flex-1 flex-col">
+            <div>
+              <div className="flex justify-between ">
+                <div>
+                  <h3 className="text-base font-medium line-clamp-1">
+                    {data?.description}
+                  </h3>
+                </div>
+                <Prices price={data?.price} className="mt-0.5 ml-2" />
+              </div>
+            </div>
+            <div className="flex flex-1 items-end justify-between text-sm">
+              <p className="text-gray-500 dark:text-slate-400 flex items-center">
+                <span className="inline-block ">x</span>
+                <span className="ml-2">1</span>
               </p>
             </div>
           </div>
@@ -236,7 +264,7 @@ const OrderDetail = ({ }) => {
           </div>
         </div>
         <div className="border-t border-slate-200 dark:border-slate-700 p-2 sm:p-8 sm:pt-0 sm:pb-0 divide-y divide-y-slate-200 dark:divide-slate-700">
-          {order?.orderItems?.map(renderProductItem)}
+          {order?.Request ? renderProductRequest(order.Request) : order?.orderItems?.map(renderProductItem)}
         </div>
       </div>
 

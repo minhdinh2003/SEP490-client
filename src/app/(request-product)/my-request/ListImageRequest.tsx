@@ -9,9 +9,8 @@ export const ListImageRequest = ({ id }: any) => {
     const [images, setImages] = useState();
     const getListImage = async () => {
       try {
-        const res = await http.get(`ProductRequest/${id}`);
-        console.log(res.payload.Data?.ImagesClient)
-        setImages(res.payload.Data?.ImagesClient);
+        const res = await http.get(`request/${id}`);
+        setImages(res.payload.data.images);
       } catch (error) {}
     };
     useEffect(() => {
@@ -21,7 +20,7 @@ export const ListImageRequest = ({ id }: any) => {
       <>
         <div className="mt-4">
           <h3 className="font-semibold text-lg mb-5">
-            Danh sách hình ảnh minh họa
+            Danh sách hình ảnh sản phẩm cần sửa
           </h3>
           <CoverflowSlider images={getUrlImage(images as any)?.listImage || []} />
         </div>

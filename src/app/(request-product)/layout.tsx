@@ -39,9 +39,9 @@ const pages: {
     role: ["USER"]
   },
   {
-    name: "Tạo yêu cầu sửa chữa",
+    name: "Tạo bill sửa chữa",
     link: "/owner-request",
-    role: ["OWNER"]
+    role: ["OWNER", "EMPLOYEE"]
   }
 ];
 

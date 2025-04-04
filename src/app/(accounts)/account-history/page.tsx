@@ -54,7 +54,7 @@ const TYPE_TRANSACTION: any = {
         icon={faShoppingCart}
         className="mr-1 text-xl text-red-500"
       />{" "}
-      Giỏ hàng
+      Danh sách yêu thích
     </div>
   ),
   "Bank": (
