@@ -62,28 +62,28 @@ const BlogDetailsPage = () => {
   return (
     <>
       <section className="pb-[120px] pt-[30px]">
-        <div className="container">
-          <div className="-mx-4 flex flex-wrap justify-center">
-            <div className="w-full px-4 lg:w-8/12">
+        <div className="container mx-auto">
+          {/* Sử dụng CSS Grid để tạo layout */}
+          <div className="flex  relative">
+            {/* Cột trái: Quảng cáo (Sticky) */}
+            <div className="flex hidden md:block h-full relative ">
+              <Image
+                src="/advertisement_1.jpg" // Đường dẫn đến hình ảnh quảng cáo
+                alt="Quảng cáo trái"
+                width={100} // Kích thước chiều rộng
+                height={500} // Kích thước chiều cao
+                className="w-full h-auto rounded-lg shadow-lg h-[500px] sticky"
+              />
+            </div>
+
+            {/* Cột giữa: Nội dung chính */}
+            <div className="col-span-1 md:col-span-1 px-4">
               <div>
-                <h4 className="flex justify-center  mb-8 text-2xl font-bold leading-tight text-black dark:text-white sm:text-3xl sm:leading-tight">
+                <h4 className="flex justify-center mb-8 text-2xl font-bold leading-tight text-black dark:text-white sm:text-3xl sm:leading-tight">
                   {promotion.name}
                 </h4>
 
                 <div>
-                  {/* {promotion.image && promotion.image.length > 0 && (
-                    <div className="mb-10 w-full overflow-hidden rounded">
-                      <div className="relative aspect-[97/60] w-full sm:aspect-[97/44]">
-                        <Image
-                          src={promotion.image[0]}
-                          alt="image"
-                          fill
-                          className="object-cover object-center"
-                        />
-                      </div>
-                    </div>
-                  )} */}
-
                   <div
                     dangerouslySetInnerHTML={{ __html: promotion.content }}
                   />
@@ -109,6 +109,17 @@ const BlogDetailsPage = () => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Cột phải: Quảng cáo (Sticky) */}
+            <div className="hidden md:block sticky top-[100px]">
+              <Image
+                src="/advertisement_2.jpg" // Đường dẫn đến hình ảnh quảng cáo
+                alt="Quảng cáo phải"
+                width={100} // Kích thước chiều rộng
+                height={300} // Kích thước chiều cao
+                className="w-full h-auto rounded-lg shadow-lg h-[500px]"
+              />
             </div>
           </div>
         </div>

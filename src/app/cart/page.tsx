@@ -12,11 +12,11 @@ import useCheckoutStore from "@/store/useCheckoutStorage";
 import { useRouter } from "next/navigation";
 import { formatPriceVND, getUrlImage } from "@/utils/helpers";
 import { Avatar, Button } from "antd";
+import ProductCard from "@/components/ProductCard";
 
 const CartPage = () => {
   const cartStore = useCartStore();
   const { cart, removeItemFromCart, updateCart } = cartStore;
-  console.log(cart);
   const checkoutStore: any = useCheckoutStore();
   const router = useRouter();
 
@@ -146,69 +146,22 @@ const CartPage = () => {
       <main className="container py-16 lg:pb-28 lg:pt-20 ">
         <div className="mb-12 sm:mb-10">
           <h2 className="block text-2xl sm:text-3xl lg:text-4xl font-semibold ">
-            Giỏ hàng
+            Danh sách yêu thích
           </h2>
-          <div className="block mt-3 sm:mt-5 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-400">
-            <Link href={"/"} className="">
-              Trang chủ
-            </Link>
-            <span className="text-xs mx-1 sm:mx-1.5">/</span>
-            <Link href={"/collection"} className="">
-              Sản phẩm
-            </Link>
-          </div>
         </div>
 
         <hr className="border-slate-200 dark:border-slate-700 my-10 xl:my-12" />
 
-        <div className="flex flex-col lg:flex-row items-center justify-center">
-          <div className="w-full lg:w-[80%] xl:w-[75%]  ">
-            {Object.values(listCartGroupByCreatorId)?.map(
-              (listCartByCreatorId: any) => {
-                console.log(listCartByCreatorId);
-                const totalPriceCart = listCartByCreatorId?.reduce(
-                  (total: number, item: any) => {
-                    return (total += item.Price * 1);
-                  },
-                  0
-                );
-                const avatar = listCartByCreatorId[0]?.CreatorAvatar || "/avt.svg";
-                const creatorName = listCartByCreatorId[0]?.CreatorName || "";
-                const creatorId = listCartByCreatorId[0]?.CreatorID || "";
-                return (
-                  <div className="pb-5 border-b mb-10">
-                    <div className="flex items-center gap-2 border-b pb-4">
-                      <Avatar src={avatar} />
-                      <span className="font-bold">{creatorName}</span>
-                    </div>
-
-                    {listCartByCreatorId?.map(renderProduct)}
-                    <div className="flex items-center justify-between">
-                      <div className="flex justify-between font-semibold text-slate-900 dark:text-slate-200 text-base pt-4">
-                        <span>Tổng : </span>
-                        <span>{formatPriceVND(totalPriceCart)}</span>
-                      </div>
-                      <ButtonPrimary
-                        onClick={() => {
-                          checkoutStore.setListCheckout(listCartByCreatorId);
-                          router.push("/checkout?fromCart=true");
-                        }}
-                      >
-                        Thanh toán
-                      </ButtonPrimary>
-                    </div>
-                  </div>
-                );
-              }
-            )}
-          </div>
-         
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-x-8 gap-y-10 mt-8 lg:mt-10">
+          {cart?.map((item: any, index: number) => (
+            <ProductCard data={item.product} key={index} />
+          ))}
         </div>
       </main>
     </div>
   ) : (
     <div className="flex flex-col  justify-center items-center h-[400px] text-[20px]">
-      Giỏ hàng trống
+      Danh sách yêu thích trống
       <Link href={"/collection"}>
         <ButtonPrimary className="mt-5 text-sm">Đi tới cửa hàng</ButtonPrimary>
       </Link>

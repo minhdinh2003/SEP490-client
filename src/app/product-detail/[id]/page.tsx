@@ -183,7 +183,7 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
           <div>
             <div className="flex justify-between ">
               <div>
-                <h3 className="text-base font-medium ">{data?.Name}</h3>
+                <h3 className="text-base font-medium ">{data?.name}</h3>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   <span></span>
                   <span className="mx-2 border-s border-slate-200 dark:border-slate-700 h-4"></span>
@@ -193,9 +193,6 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
             </div>
           </div>
           <div className="flex flex-1 items-end justify-between text-sm">
-            <p className="text-gray-500 dark:text-slate-400">
-              Số lượng : {data?.inventory?.quantity}
-            </p>
 
             <div className="flex">
               <button
@@ -230,8 +227,8 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
   const notifyAddTocart = async () => {
     try {
       await cartStore.addItemToCart({
-        ProductID: data?.ProductID,
-        Quantity,
+        productId: data?.id,
+        userId: user.id
       });
       toast.custom(
         (t) => (
