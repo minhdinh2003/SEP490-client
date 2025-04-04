@@ -1,81 +1,82 @@
-/** @type {import('tailwindcss').Config} */
-const colors = require("tailwindcss/colors");
+const defaultTheme = require("tailwindcss/defaultTheme");
+
+// Custom color with css variable color in __theme_color.scss
+function customColors(cssVar) {
+  return ({ opacityVariable, opacityValue }) => {
+    if (opacityValue !== undefined) {
+      return `rgba(var(${cssVar}), ${opacityValue})`;
+    }
+    if (opacityVariable !== undefined) {
+      return `rgba(var(${cssVar}), var(${opacityVariable}, 1))`;
+    }
+    return `rgb(var(${cssVar}))`;
+  };
+}
 
 module.exports = {
-  content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
-  darkMode: "class",
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  darkMode: "class", // or 'media' or 'class',
   theme: {
     container: {
       center: true,
-      padding: "1rem",
+      padding: {
+        DEFAULT: "1rem",
+        xl: "40px",
+        "2xl": "128px",
+      },
     },
 
-    screens: {
-      xs: "450px",
-      // => @media (min-width: 450px) { ... }
-
-      sm: "575px",
-      // => @media (min-width: 576px) { ... }
-
-      md: "768px",
-      // => @media (min-width: 768px) { ... }
-
-      lg: "992px",
-      // => @media (min-width: 992px) { ... }
-
-      xl: "1200px",
-      // => @media (min-width: 1200px) { ... }
-
-      "2xl": "1400px",
-      // => @media (min-width: 1400px) { ... }
-    },
     extend: {
       colors: {
-        current: "currentColor",
-        transparent: "transparent",
-        white: "#FFFFFF",
-        black: "#121723",
-        dark: "#1D2430",
-        primary: "#4A6CF7",
-        yellow: "#FBB040",
-        "bg-color-dark": "#171C28",
-        "body-color": {
-          DEFAULT: "#788293",
-          dark: "#959CB1",
+        orange: {
+          600: '#D97706', 
         },
-        stroke: {
-          stroke: "#E3E8EF",
-          dark: "#353943",
+        primary: {
+          50: customColors("--c-primary-50"),
+          100: customColors("--c-primary-100"),
+          200: customColors("--c-primary-200"),
+          300: customColors("--c-primary-300"),
+          400: customColors("--c-primary-400"),
+          500: customColors("--c-primary-500"),
+          6000: customColors("--c-primary-600"),
+          700: customColors("--c-primary-700"),
+          800: customColors("--c-primary-800"),
+          900: customColors("--c-primary-900"),
         },
-        gray: {
-          ...colors.gray,
-          dark: "#1E232E",
-          light: "#F0F2F9",
+        secondary: {
+          50: customColors("--c-secondary-50"),
+          100: customColors("--c-secondary-100"),
+          200: customColors("--c-secondary-200"),
+          300: customColors("--c-secondary-300"),
+          400: customColors("--c-secondary-400"),
+          500: customColors("--c-secondary-500"),
+          6000: customColors("--c-secondary-600"),
+          700: customColors("--c-secondary-700"),
+          800: customColors("--c-secondary-800"),
+          900: customColors("--c-secondary-900"),
         },
-      },
-
-      boxShadow: {
-        signUp: "0px 5px 10px rgba(4, 10, 34, 0.2)",
-        one: "0px 2px 3px rgba(7, 7, 77, 0.05)",
-        two: "0px 5px 10px rgba(6, 8, 15, 0.1)",
-        three: "0px 5px 15px rgba(6, 8, 15, 0.05)",
-        sticky: "inset 0 -1px 0 0 rgba(0, 0, 0, 0.1)",
-        "sticky-dark": "inset 0 -1px 0 0 rgba(255, 255, 255, 0.1)",
-        "feature-2": "0px 10px 40px rgba(48, 86, 211, 0.12)",
-        submit: "0px 5px 20px rgba(4, 10, 34, 0.1)",
-        "submit-dark": "0px 5px 20px rgba(4, 10, 34, 0.1)",
-        btn: "0px 1px 2px rgba(4, 10, 34, 0.15)",
-        "btn-hover": "0px 1px 2px rgba(0, 0, 0, 0.15)",
-        "btn-light": "0px 1px 2px rgba(0, 0, 0, 0.1)",
-      },
-      dropShadow: {
-        three: "0px 5px 15px rgba(6, 8, 15, 0.05)",
+        neutral: {
+          50: customColors("--c-neutral-50"),
+          100: customColors("--c-neutral-100"),
+          200: customColors("--c-neutral-200"),
+          300: customColors("--c-neutral-300"),
+          400: customColors("--c-neutral-400"),
+          500: customColors("--c-neutral-500"),
+          6000: customColors("--c-neutral-600"),
+          700: customColors("--c-neutral-700"),
+          800: customColors("--c-neutral-800"),
+          900: customColors("--c-neutral-900"),
+        },
+       
       },
     },
   },
-  plugins: [],
+  variants: {
+    extend: {},
+  },
+  plugins: [
+    require("@tailwindcss/typography"),
+    require("@tailwindcss/forms"),
+    require("@tailwindcss/aspect-ratio"),
+  ],
 };
