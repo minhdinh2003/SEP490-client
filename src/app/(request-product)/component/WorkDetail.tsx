@@ -1,11 +1,8 @@
 "use client";
-import http from "@/http/http";
-import Status from "@/shared/Status/Status";
 import useAuthStore from "@/store/useAuthStore";
 import { handleErrorHttp } from "@/utils/handleError";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-// import "swiper/swiper-bundle.min.css";
 import "swiper/css";
 import "swiper/css/navigation";
 
@@ -16,38 +13,48 @@ import {
   getUrlImage,
   getWorkStatusColor,
   getWorkStatusText,
-  uploadImagesToFirebase,
+  WorkStatus,
 } from "@/utils/helpers";
 import Image from "next/image";
+
+import { ServiceResponse } from "@/type/service.response";
+import { IPagingParam } from "@/contains/paging";
+import TaskDetailService from "@/http/taskDetailService";
+import UploadService from "@/http/uploadService";
+import UserService from "@/http/userService";
+import TextArea from "antd/es/input/TextArea";
+import { Input } from "antd";
 
 const WorkDetail = ({
   idRequest,
   callback = () => {},
   images,
   isCustomer,
-  moneyCheckout,
-  handleCheckout,
-  moneyDatcoc,
-  isDatcoc,
-  payment,
-  setPayment,
   idWork,
 }: any) => {
   const optionWork = [
     {
-      title: "Đang tiến hành",
-      value: 1,
+      title: "Đang chờ xử lý",
+      value: "PENDING",
     },
     {
-      title: "Đã có sản phẩm",
-      value: 2,
+      title: "Đang thực hiện",
+      value: "IN_PROGRESS",
+    },
+    {
+      title: "Đã hoàn thành",
+      value: "COMPLETED",
+    },
+    {
+      title: "Đã hủy",
+      value: "CANCELLED",
     },
   ];
   const [status, setStatus] = useState();
   const [initStatus, setInitStatus] = useState();
-  const [reget, setReget] = useState(1);
   const [listImage, setListImage] = useState<string[]>([]);
   const userStore: any = useAuthStore();
+  const isEmployee = userStore.user.role == "EMPLOYEE";
   const [work, setWork] = useState<any>([]);
   function renderTableRow(label: any, value: any) {
     return (
@@ -69,16 +76,17 @@ const WorkDetail = ({
   }
   const getWorkDetail = async () => {
     try {
-      const res = await http.get(`productRequest/work/${idWork}`);
-      setWork(res.payload.Data);
-      setListImage(getUrlImage(res?.payload?.Data?.Images).listImage);
-      setStatus(res.payload?.Data?.Status);
-      setInitStatus(res.payload?.Data?.Status);
+      const res = await TaskDetailService.getById<ServiceResponse>(idWork);
+      setWork(res.data);
+      setListImage(getUrlImage(res?.data?.images).listImage);
+      setStatus(res.data?.status);
+      setInitStatus(res.data?.status);
     } catch (error: any) {
       console.log(error);
       handleErrorHttp(error?.payload);
     }
   };
+  const [employees, setEmployees] = useState([]);
 
   useEffect(() => {
     if (idWork) {
@@ -87,9 +95,18 @@ const WorkDetail = ({
   }, [idWork]);
 
   const handleChangeFile = async (e: any) => {
-    const listUrl: string[] = (await uploadImagesToFirebase(
-      e.target.files
-    )) as string[];
+    const files = e.target.files;
+    const listUrl: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        const response = await UploadService.upload(file);
+        listUrl.push(response.data.fileUrl); // Thêm URL vào mảng
+      } catch (error) {
+        console.error(`Error uploading file ${file.name}:`, error);
+        // Xử lý lỗi nếu cần
+      }
+    }
     if (listUrl?.length > 0) {
       setListImage([...listImage, ...listUrl]);
     }
@@ -101,58 +118,22 @@ const WorkDetail = ({
     setListImage(newListImage);
   };
 
-  const onChangeStatusWork = async (
-    status: any,
-    id: any,
-    isMess?: boolean,
-    mess?: string
-  ) => {
+  const updateData = async () => {
     try {
-      await http.put(
-        `productRequest/work/status?status=${status}&workID=${id}`,
-        {}
-      );
-      getWorkDetail();
-      if (isMess && mess) {
-        toast.success(mess);
+      let data: any = {
+        description: work.description,
+        title: work.title,
+        status: status,
+        images: listImage,
+        comments: work.comments,
+        price: work.price,
       }
-    } catch (error: any) {
-      console.log(error);
-      handleErrorHttp(error?.payload);
-    }
-  };
-
-  console.log(listImage);
-  const hadnleUpdateImage = async () => {
-    const initBody = {
-      CreatedBy: "string",
-      CreatedDate: "2024-08-21T16:10:11.294Z",
-      ModifiedBy: "string",
-      ModifiedDate: "2024-08-21T16:10:11.294Z",
-      WorkID: 0,
-      ProductRequestID: 0,
-      CreatorUserID: 0,
-      Title: "",
-      Description: "",
-      WorkUrl: "string",
-      Status: 0,
-      ExpectedDate: "2024-08-21T16:10:11.294Z",
-      Images: "string",
-    };
-    try {
-      if (status == 2 && listImage.length == 0) {
-        toast.error("Vui lòng thêm ảnh");
-        return;
+      if (work.assignedTo){
+        data.assignee = {
+          connect: { id: work.assignedTo },
+        }
       }
-      if (status == 2) {
-        await http.post(`ProductRequest/updateWork`, {
-          ...initBody,
-          ProductRequestID: idRequest,
-          ...work,
-          Images: listImage.join("*"),
-        });
-      }
-      await onChangeStatusWork(work.Status == 4 ? 2 : status, work.WorkID);
+      var result = await TaskDetailService.updateById(work.id, data);
       toast.success("Đã cập nhật");
       callback();
     } catch (error: any) {
@@ -161,6 +142,34 @@ const WorkDetail = ({
     }
   };
 
+  const getListEmployee = async () => {
+    try {
+      const param: IPagingParam = {
+        pageSize: 1000,
+        pageNumber: 1,
+        conditions: [
+          {
+            key: "role",
+            condition: "equal",
+            value: "EMPLOYEE",
+          },
+        ],
+        searchKey: "",
+        searchFields: [],
+        includeReferences: {},
+        sortOrder: "createdAt desc",
+      };
+      const res = await UserService.getPaging<ServiceResponse>(param);
+
+      setEmployees(res.data.data || []);
+    } catch (error: any) {
+      handleErrorHttp(error?.payload);
+    }
+  };
+
+  useEffect(() => {
+    getListEmployee();
+  }, []);
   return (
     <div className="nc-CartPage relative">
       <main className="py-5 pb-2">
@@ -168,129 +177,172 @@ const WorkDetail = ({
           <div className="flex flex-col gap-5 ">
             <table className="min-w-full divide-y divide-gray-200">
               <tbody>
-                {renderTableRow("Tiêu đề", work?.Title)}
-                {renderTableRow("Mô tả", work?.Description)}
+                {renderTableRow(
+                  "Mô tả",
+                  <TextArea
+                    className="outline-none rounded border border-gray-400 leading-normal resize-none w-full h-16 py-2 px-3 font-medium placeholder-gray-700"
+                    name="body"
+                    placeholder="Nhập mô tả "
+                    required
+                    value={work?.description}
+                    onChange={(e: any) =>
+                      setWork({ ...work, description: e.target.value })
+                    }
+                    disabled={work.status == WorkStatus.Done || work.status == WorkStatus.Reject}
+                  ></TextArea>
+                )}
+                {renderTableRow(
+                  "Nhân viên",
+                  <div className="w-[400px]">
+                    <Select
+                      onChange={(e) => {
+                        setWork({
+                          ...work,
+                          assignedTo: parseInt(e.target.value),
+                        });
+                      }}
+                      value={work?.assignedTo || ""}
+                      disabled={isCustomer || isEmployee || work.status == WorkStatus.Done || work.status == WorkStatus.Reject}
+                    >
+                      {/* Placeholder option */}
+                      <option value="">-- Chọn nhân viên --</option>
+
+                      {/* List of employees */}
+                      {employees.map((employee: any) => (
+                        <option key={employee.id} value={employee.id}>
+                          {employee.fullName}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+                {renderTableRow(
+                  "Chi phí phát sinh",
+                  <div className="w-[400px]">
+                    <Input
+                      onChange={(e) => {
+                        setWork({
+                          ...work,
+                          price: parseInt(e.target.value),
+                        });
+                      }}
+                      type="number"
+                      value={work?.price || 0}
+                      disabled={isCustomer || isEmployee || work.status == WorkStatus.Done || work.status == WorkStatus.Reject}
+                    >
+                    </Input>
+                  </div>
+                )}
                 {renderTableRow(
                   "Trạng thái",
                   <div className="w-[400px]">
-                    {!isCustomer && (work.Status == 1 || work.Status == 2) ? (
-                      <Select
-                        disabled={!isDatcoc}
-                        onChange={(e: any) => {
-                          const value = e.target.value;
-                          if (value == 1) {
-                            setListImage([]);
-                          }
-                          setStatus(e.target.value);
-                        }}
-                        value={status}
-                      >
-                        {optionWork.map((i: any) => (
-                          <option key={i.value} value={i.value}>
-                            {i.title}
-                          </option>
-                        ))}
-                      </Select>
-                    ) : (
-                      <Status
-                        text={getWorkStatusText(work.Status)}
-                        color={getWorkStatusColor(work.Status)}
-                      />
-                    )}
+                    <Select
+                      onChange={(e: any) => {
+                        setStatus(e.target.value);
+                      }}
+                      value={status}
+                      disabled={isCustomer || work.status == WorkStatus.Done || work.status == WorkStatus.Reject}
+                    >
+                      {optionWork.map((i: any) => (
+                        <option key={i.value} value={i.value}>
+                          {i.title}
+                        </option>
+                      ))}
+                    </Select>
                   </div>
                 )}
               </tbody>
             </table>
 
-            {((status != 1 && status != 3) || work.Status == 4) &&
-              !isCustomer &&
-              isDatcoc && (
-                <div className="flex flex-col ">
-                  <div className="rounded-full w-[160px] h-[100px]">
-                    <label
-                      htmlFor="input-file"
-                      className="py-1 rounded-full flex items-center justify-center cursor-pointer bg-black text-[white]"
+            {!(work.status == WorkStatus.Done || work.status == WorkStatus.Reject) && !isCustomer && (
+              <div className="flex flex-col ">
+                <div className="rounded-full w-[160px] h-[100px]">
+                  <label
+                    htmlFor="input-file"
+                    className="py-1 rounded-full flex items-center justify-center cursor-pointer bg-black text-[white]"
+                  >
+                    <svg
+                      width="30"
+                      height="30"
+                      viewBox="0 0 30 30"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
                     >
-                      <svg
-                        width="30"
-                        height="30"
-                        viewBox="0 0 30 30"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M17.5 5H7.5C6.83696 5 6.20107 5.26339 5.73223 5.73223C5.26339 6.20107 5 6.83696 5 7.5V20M5 20V22.5C5 23.163 5.26339 23.7989 5.73223 24.2678C6.20107 24.7366 6.83696 25 7.5 25H22.5C23.163 25 23.7989 24.7366 24.2678 24.2678C24.7366 23.7989 25 23.163 25 22.5V17.5M5 20L10.7325 14.2675C11.2013 13.7988 11.8371 13.5355 12.5 13.5355C13.1629 13.5355 13.7987 13.7988 14.2675 14.2675L17.5 17.5M25 12.5V17.5M25 17.5L23.0175 15.5175C22.5487 15.0488 21.9129 14.7855 21.25 14.7855C20.5871 14.7855 19.9513 15.0488 19.4825 15.5175L17.5 17.5M17.5 17.5L20 20M22.5 5H27.5M25 2.5V7.5M17.5 10H17.5125"
-                          stroke="currentColor"
-                          strokeWidth={1.5}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          fill="#000"
-                        />
-                      </svg>
+                      <path
+                        d="M17.5 5H7.5C6.83696 5 6.20107 5.26339 5.73223 5.73223C5.26339 6.20107 5 6.83696 5 7.5V20M5 20V22.5C5 23.163 5.26339 23.7989 5.73223 24.2678C6.20107 24.7366 6.83696 25 7.5 25H22.5C23.163 25 23.7989 24.7366 24.2678 24.2678C24.7366 23.7989 25 23.163 25 22.5V17.5M5 20L10.7325 14.2675C11.2013 13.7988 11.8371 13.5355 12.5 13.5355C13.1629 13.5355 13.7987 13.7988 14.2675 14.2675L17.5 17.5M25 12.5V17.5M25 17.5L23.0175 15.5175C22.5487 15.0488 21.9129 14.7855 21.25 14.7855C20.5871 14.7855 19.9513 15.0488 19.4825 15.5175L17.5 17.5M17.5 17.5L20 20M22.5 5H27.5M25 2.5V7.5M17.5 10H17.5125"
+                        stroke="currentColor"
+                        strokeWidth={1.5}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="#000"
+                      />
+                    </svg>
 
-                      <span className="mt-1 text-xs inline-block ml-2 ">
-                        Thêm ảnh
-                      </span>
-                    </label>
-                    <input
-                      onChange={handleChangeFile}
-                      type="file"
-                      className="opacity-0 cursor-pointer"
-                      multiple
-                      id="input-file"
-                    />
-                  </div>
-                  <div className="mt-1 flex  flex-wrap gap-4 relative ">
-                    {listImage?.map((src: any, index: any) => (
-                      <div
-                        key={index}
-                        style={{
-                          width: "calc(50% - 40px)",
-                        }}
-                        className="relative flex items-center justify-between border border-gray-300 p-2 rounded "
-                      >
-                        <img
-                          src={src}
-                          className="w-14 h-14 object-cover rounded"
-                          alt="Product"
-                        />
-                        <div className="flex-1 ml-4">
-                          <p className="text-sm">Image {index + 1}</p>
-                          <p className="text-xs text-gray-500">
-                            {(src.size || 100 + Math.random() * 1000).toFixed(
-                              2
-                            )}{" "}
-                            KB
-                          </p>
-                        </div>
-                        <Image
-                          className="cursor-pointer"
-                          onClick={() => handleDeleteImage(index)}
-                          src="/delete1.svg"
-                          alt=""
-                          width={20}
-                          height={20}
-                        />
-                      </div>
-                    ))}
-                  </div>
+                    <span className="mt-1 text-xs inline-block ml-2 ">
+                      Thêm ảnh
+                    </span>
+                  </label>
+                  <input
+                    onChange={handleChangeFile}
+                    type="file"
+                    className="opacity-0 cursor-pointer"
+                    multiple
+                    id="input-file"
+                  />
                 </div>
-              )}
-
-            {!isCustomer && (status == 2 || work.Status == 2) && isDatcoc && (
-              <div className="mt-5 w-full flex justify-end">
-                <ButtonPrimary onClick={hadnleUpdateImage}>Lưu</ButtonPrimary>
+                <div className="mt-1 flex  flex-wrap gap-4 relative ">
+                  {listImage?.map((src: any, index: any) => (
+                    <div
+                      key={index}
+                      style={{
+                        width: "calc(50% - 40px)",
+                      }}
+                      className="relative flex items-center justify-between border border-gray-300 p-2 rounded "
+                    >
+                      <img
+                        src={src}
+                        className="w-14 h-14 object-cover rounded"
+                        alt="Product"
+                      />
+                      <div className="flex-1 ml-4">
+                        <p className="text-sm">Image {index + 1}</p>
+                        <p className="text-xs text-gray-500">
+                          {(src.size || 100 + Math.random() * 1000).toFixed(2)}{" "}
+                          KB
+                        </p>
+                      </div>
+                      <Image
+                        className="cursor-pointer"
+                        onClick={() => handleDeleteImage(index)}
+                        src="/delete1.svg"
+                        alt=""
+                        width={20}
+                        height={20}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            {((isCustomer && work.Status != 1) || work.Status == 3) && (
+            {!isCustomer &&
+              (status == 2 || !(work.status == WorkStatus.Done || work.status == WorkStatus.Reject)) && (
+                <div className="mt-5 w-full flex justify-end">
+                  <ButtonPrimary onClick={updateData}>Lưu</ButtonPrimary>
+                </div>
+              )}
+
+            {((isCustomer && work.Status != 1) ||
+              work.status == WorkStatus.Done) && (
               <div className="mt-4">
                 <h3 className="font-semibold text-lg mb-5">
                   Danh sách hình ảnh{" "}
                 </h3>
-                <CoverflowSlider
-                  images={listImage || []}
-                />
+                {!listImage?.length ? (
+                  <div>Danh sách ảnh trống</div>
+                ) : (
+                  <CoverflowSlider images={listImage || []} />
+                )}
               </div>
             )}
           </div>

@@ -1,28 +1,34 @@
 "use client";
-
-import http from "@/http/http";
 import { handleErrorHttp } from "@/utils/handleError";
 import { useEffect, useState } from "react";
-import { NumberOutlined } from "@ant-design/icons";
 import {
   dateFormat,
   formatPriceVND,
   getUrlImage,
   getWorkStatusColor,
   getWorkStatusText,
-  uploadImagesToFirebase,
+  getRequestProductStatusText,
+  getRequestProductStatusColor,
+  RequestStatus,
 } from "@/utils/helpers";
 import Status from "@/shared/Status/Status";
 import NcModal from "@/shared/NcModal/NcModal";
 import WorkDetail from "./WorkDetail";
-import ButtonSecondary from "@/shared/Button/ButtonSecondary";
 import toast from "react-hot-toast";
 import ButtonPrimary from "@/shared/Button/ButtonPrimary";
 import ShippingAddress from "@/app/checkout/ShippingAddress";
 import Radio from "@/shared/Radio/Radio";
-import { Modal } from "antd";
 import Image from "next/image";
 import CoverflowSlider from "@/components/slider/SliderImage";
+import RequestService from "@/http/requestService";
+import { ServiceResponse } from "@/type/service.response";
+import { IPagingParam } from "@/contains/paging";
+import TaskDetailService from "@/http/taskDetailService";
+import UploadService from "@/http/uploadService";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Select } from "antd";
+import useAuthStore from "@/store/useAuthStore";
+import useCheckoutStore from "@/store/useCheckoutStorage";
 
 const ListWorkOfRequest = ({
   idRequest,
@@ -35,35 +41,49 @@ const ListWorkOfRequest = ({
   handleReject,
   callback = () => {},
 }: any) => {
+  const statusRequest = [
+    {
+      title: "Đang chờ xử lý",
+      value: "PENDING",
+    },
+    {
+      title: "Đang thực hiện",
+      value: "IN_PROGRESS",
+    },
+    {
+      title: "Đã hoàn thành",
+      value: "COMPLETED",
+    },
+    {
+      title: "Đã hủy",
+      value: "CANCELLED",
+    },
+  ];
+  const router = useRouter();
   const [openModal, setOpenModal] = useState(false);
   const [AddressId, setAddressId] = useState(null);
-  const [listImage, setListImage] = useState<string[]>([]);
-
+  const [imageRepairs, setImageRepairs] = useState<string[]>([]);
+  const [request, setRequest] = useState<any>();
   const [listWork, setListWork] = useState([]);
   const [title, setTitle] = useState("");
   const [openWorkDetail, setOpenWorkDetail] = useState(false);
   const [idWork, setIdWork] = useState(null);
   const [openAddess, setOpenAddress] = useState(false);
   const [mode, setMode] = useState("");
-
+  const userStore: any = useAuthStore();
+  const isOwner = userStore.user.role == "OWNER";
   const [isThanhToan, setIsThanhToan] = useState(false);
   const [isDatcoc, setIsDatcoc] = useState(false);
+  const [status, setStatus] = useState();
+  const checkoutStore = useCheckoutStore();
 
   const getDetailProductRequest = async () => {
-    const res = await http.get(`ProductRequest/${idRequest}`);
-    const request = res.payload.Data;
-    setListImage(getUrlImage(request?.Images)?.listImage);
-
-    setIsThanhToan(
-      request.DepositAmount &&
-        request.DepositAmount > 0 &&
-        request.DepositAmount >= request?.NegotiatedPrice
-    );
-    setIsDatcoc(
-      request.DepositAmount &&
-        request.DepositAmount > 0 &&
-        request.DepositAmount < request?.NegotiatedPrice
-    );
+    const res = await RequestService.getById<ServiceResponse>(idRequest);
+    const request = res.data;
+    setRequest(request);
+    setImageRepairs(getUrlImage(request?.imageRepairs)?.listImage);
+    setIsThanhToan(request.isPay);
+    setStatus(request.status);
   };
 
   useEffect(() => {
@@ -74,13 +94,27 @@ const ListWorkOfRequest = ({
 
   const getListWork = async () => {
     try {
-      const res = await http.get(
-        `productRequest/work?productRequestID=${idRequest}`
-      );
+      const param: IPagingParam = {
+        pageSize: 1000,
+        pageNumber: 1,
+        conditions: [
+          {
+            key: "requestId",
+            condition: "equal",
+            value: idRequest,
+          },
+        ],
+        searchKey: "",
+        searchFields: [],
+        includeReferences: {
+          assignee: true,
+        },
+        sortOrder: "createdAt asc",
+      };
+      const res = await TaskDetailService.getPaging<ServiceResponse>(param);
 
-      setListWork(res.payload.Data || []);
+      setListWork(res.data.data || []);
     } catch (error: any) {
-      console.log(error);
       handleErrorHttp(error?.payload);
     }
   };
@@ -105,16 +139,6 @@ const ListWorkOfRequest = ({
               id={"0"}
             />
             Thanh toán PayOS
-          </div>
-          <div className="flex items-center my-3">
-            <Radio
-              className="mr-1"
-              defauttValue={payment}
-              onChange={(v: any) => setPayment(v)}
-              name="role"
-              id={"1"}
-            />
-            Thanh toán bằng Coin
           </div>
         </div>
         {mode == "dc" && (
@@ -175,6 +199,7 @@ const ListWorkOfRequest = ({
     dueDate,
     number,
     idWork,
+    task,
   }: any) => {
     return (
       <div
@@ -191,7 +216,22 @@ const ListWorkOfRequest = ({
           </div>
           <h2 className="ml-4 text-lg font-bold">{title}</h2>
         </div>
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{description}</p>
+        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+          Mô tả: {description}
+        </p>
+        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+          Chi phí phát sinh: {task?.price ? formatPriceVND(task?.price) : 0} VND
+        </p>
+        {!task?.assignee ? (
+          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+            Chưa đăng ký
+          </p>
+        ) : (
+          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+            Nhân viên: {task?.assignee?.fullName}
+          </p>
+        )}
+        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{}</p>
         <div className="flex justify-between items-center">
           <span
             className={`text-xs font-semibold ${
@@ -220,34 +260,14 @@ const ListWorkOfRequest = ({
       <Card
         key={index}
         number={index + 1}
-        title={task.Title}
-        description={task.Description}
-        status={task.Status}
-        dueDate={task.ExpectedDate}
-        idWork={task.WorkID}
+        title={task.title}
+        description={task.description}
+        status={task.status}
+        dueDate={task.deadline}
+        idWork={task.id}
+        task={task}
       />
     ));
-  };
-
-  const onChangeStatusWork = async (
-    status: any,
-    id: any,
-    isMess?: boolean,
-    mess?: string
-  ) => {
-    try {
-      await http.put(
-        `productRequest/work/status?status=${status}&workID=${id}`,
-        {}
-      );
-      //   getWorkDetail();
-      if (isMess && mess) {
-        toast.success(mess);
-      }
-    } catch (error: any) {
-      console.log(error);
-      handleErrorHttp(error?.payload);
-    }
   };
 
   const reset = () => {
@@ -256,55 +276,66 @@ const ListWorkOfRequest = ({
     setTitle("");
   };
   const handleDeleteImage = (index: number) => {
-    const newListImage: string[] = [...listImage!];
+    const newListImage: string[] = [...imageRepairs!];
     newListImage.splice(index, 1);
-    setListImage(newListImage);
+    setImageRepairs(newListImage);
   };
+
   const handleChangeFile = async (e: any) => {
-    const listUrl: string[] = (await uploadImagesToFirebase(
-      e.target.files
-    )) as string[];
+    const files = e.target.files;
+    const listUrl: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        const response = await UploadService.upload(file);
+        listUrl.push(response.data.fileUrl);
+      } catch (error) {
+        console.error(`Error uploading file ${file.name}:`, error);
+      }
+    }
     if (listUrl?.length > 0) {
-      setListImage([...listImage, ...listUrl]);
+      setImageRepairs([...imageRepairs, ...listUrl]);
     }
   };
 
-  const handleUpdayeImage = async () => {
+  const handleUpdateRequest = async () => {
     try {
-      if (listImage.length === 0) {
+      if (imageRepairs.length === 0) {
         toast.error("Vui lòng thêm ảnh");
         return;
       }
-      const res = await http.put("ProductRequest/creator/productRequest", {
-        Images: listImage.join("*"),
-        ProductRequestID: idRequest,
-      });
+      const res = await RequestService.updateById(idRequest, {
+        status: status,
+        imageRepairs: imageRepairs
+      }) ;
+      callback();
       toast.success("Đã cập nhật");
     } catch (error) {}
   };
-  const canPay =
-    listWork?.filter((i: any) => i?.Status == 2)?.length == listWork?.length;
+  const canPay = request?.status == RequestStatus.IN_PROGRESS ||  request?.status == RequestStatus.COMPLETED;
   return listWork.length > 0 ? (
     <div>
       <div className="ml-10">
         <span className="font-bold">Trạng thái : </span>
-        {isThanhToan ? (
-          <Status text={"Đã thanh toán"} color={"blue"} />
-        ) : isDatcoc ? (
-          <Status text={"Đã đặt cọc"} color={"blue"} />
+        {isOwner ? (
+          <Select
+            onChange={(value: any) => {
+              setStatus(value);
+            }}
+            value={status}
+            disabled={!isOwner}
+          >
+            {statusRequest.map((i: any) => (
+              <option key={i.value} value={i.value}>
+                {i.title}
+              </option>
+            ))}
+          </Select>
         ) : (
-          <Status text={"Chưa đặt cọc"} color={"gray"} />
-        )}
-        {isCustomer && !isDatcoc && !isThanhToan && (
-          <div className="text-gray-600 my-3">
-            Hãy đặt cọc ngay để nhà sáng tạo tiến hành làm{" "}
-          </div>
-        )}
-        {isCustomer && !isThanhToan &&  (
-          <div className="text-gray-600 my-3">
-            Khi tất cả các công việc ở trạng thái{" "}
-            <strong>Đã có sản phẩm</strong>  và có ảnh sản phẩm cuối cùng bạn mới có thể tiến hành thanh toán{" "}
-          </div>
+          <Status
+            text={getRequestProductStatusText(request.status)}
+            color={getRequestProductStatusColor(request.status)}
+          />
         )}
       </div>
       <div className="grid grid-cols-3 p-10 gap-10 max-h-96 overflow-auto">
@@ -314,7 +345,7 @@ const ListWorkOfRequest = ({
         <div className="flex flex-col ">
           {!isThanhToan && (
             <div className="my-5 text-gray-500">
-              Tất cả công việc đã xong, hãy cập nhật ảnh sản phẩm
+              Tất cả công việc đã xong, hãy cập nhật ảnh sản phẩm sau khi đã sửa
             </div>
           )}
           <div className="rounded-full w-[160px] h-[100px]">
@@ -354,7 +385,7 @@ const ListWorkOfRequest = ({
             />
           </div>
           <div className="mt-1 flex  flex-wrap gap-4 relative ">
-            {listImage?.map((src: any, index: any) => (
+            {imageRepairs?.map((src: any, index: any) => (
               <div
                 key={index}
                 style={{
@@ -388,7 +419,7 @@ const ListWorkOfRequest = ({
             <div className="flex justify-end">
               <ButtonPrimary
                 className="my-5"
-                onClick={() => handleUpdayeImage()}
+                onClick={() => handleUpdateRequest()}
               >
                 Lưu
               </ButtonPrimary>
@@ -397,13 +428,16 @@ const ListWorkOfRequest = ({
         </div>
       )}
 
-      {(((canPay || isThanhToan) && isCustomer && listImage.length > 0) ||
-        ((canPay || isThanhToan) && !isCustomer && isThanhToan && listImage.length > 0)) && (
+      {(( isCustomer && imageRepairs.length > 0) ||
+        ((canPay || isThanhToan) &&
+          !isCustomer &&
+          isThanhToan &&
+          imageRepairs.length > 0)) && (
         <div className="mt-4">
           <h3 className="font-semibold text-lg mb-5">
             Danh sách hình ảnh sản phẩm{" "}
           </h3>
-          <CoverflowSlider images={listImage || []} />
+          <CoverflowSlider images={imageRepairs || []} />
         </div>
       )}
       <NcModal
@@ -424,63 +458,6 @@ const ListWorkOfRequest = ({
         )}
         modalTitle={title}
       />
-      <div
-        style={{
-          marginBottom: -50,
-        }}
-      >
-        {isCustomer && !isThanhToan && (
-          <div className="mt-5 w-full flex justify-end gap-3">
-            <ButtonSecondary
-              onClick={async () => {
-                Modal.confirm({
-                  onOk: async () => {
-                    await handleReject(idRequest);
-                    callback();
-                  },
-                  centered: true,
-                  title: "Bạn có chắc muốn hủy đơn hàng? ",
-                  okText: "Có",
-                  cancelText: "Không",
-                  okButtonProps: {
-                    style: {
-                      backgroundColor: "red",
-                      borderColor: "red",
-                      color: "white",
-                    },
-                  },
-                });
-              }}
-            >
-              Hủy đơn
-            </ButtonSecondary>
-            {!isDatcoc ? (
-              <ButtonPrimary
-                onClick={
-                  () => {
-                    setOpenModal(true);
-                    setMode("dc");
-                  }
-                  // handleCheckout(idRequest, work?.WorkID, false, moneyDatcoc)
-                }
-              >
-                Đặt cọc
-              </ButtonPrimary>
-            ) : !isThanhToan ? (
-              <>
-                <ButtonPrimary
-                  disabled={!canPay || listImage.length === 0}
-                  onClick={() => setOpenAddress(true)}
-                >
-                  Thanh toán
-                </ButtonPrimary>
-              </>
-            ) : (
-              ""
-            )}
-          </div>
-        )}
-      </div>
 
       <NcModal
         isOpenProp={openAddess}
@@ -497,8 +474,7 @@ const ListWorkOfRequest = ({
               <ButtonPrimary
                 disabled={!AddressId}
                 onClick={() => {
-                  setOpenModal(true);
-                  setMode("tt");
+                  router.push("/account-order?tab=2");
                 }}
               >
                 Thanh toán

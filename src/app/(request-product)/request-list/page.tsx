@@ -15,49 +15,42 @@ import {
   getRequestProductStatusColor,
   getRequestProductStatusText,
   RequestProductStatus,
+  RequestStatus,
 } from "@/utils/helpers";
 import ButtonPrimary from "@/shared/Button/ButtonPrimary";
 import { ActionButton, ButtonIcon } from "@/shared/Button/CustomButton";
 import CreateWork from "../component/CreateJob";
-import ListWork from "../component/WorkDetail";
 import useMessageStore from "@/store/useMessStore";
 import ModalMessage from "@/components/ModalMessage";
 import { useSearchParams } from "next/navigation";
 import Input from "@/shared/Input/Input";
 import { ListImageRequest } from "../my-request/ListImageRequest";
 import ListWorkOfRequest from "../component/ListWork";
+import RequestService from "@/http/requestService";
+import { ServiceResponse } from "@/type/service.response";
+import { IPagingParam } from "@/contains/paging";
+import { get } from "js-cookie";
 
 const RequestList = () => {
   const [openPrice, setOpenPrice] = useState(false);
+  const [openReject, setOpenReject] = useState(false);
   const [pricce, setPrice] = useState("");
+  const [reasonReject, setReasonReject] = useState("");
   const [idPrice, setIdPrice] = useState("");
   const [isDatcoc, setIsDatcoc] = useState(false);
-  const [openImage,setOpenImage] = useState(false);
-  const [idImage,setIdImage] = useState(null);
+  const [openImage, setOpenImage] = useState(false);
+  const [idImage, setIdImage] = useState(null);
   const [openModal, setOpenModal] = useState(false);
   const [openWork, setOpenModalWork] = useState(false);
   const [idWork, setIdWork] = useState("");
   const [reget, setReget] = useState(1);
   const [images, setImages] = useState("");
-  const [listCategory, setListCategory] = useState<any>([]);
-  useGetData("Category/all", [], setListCategory);
   const userStore: any = useAuthStore();
-  //   const { data: listRequest } = useGetData("Policy/owner", [reget]);
   const [listRequest, setListRequest] = useState<any>([]);
   const [currentPolicy, setCurrentPolicy] = useState<any>(null);
   const [currentId, setCurrentId] = useState("");
 
-  const handleDelete = async (id: any) => {
-    try {
-      const res = await http.delete("ProductRequest/request?id=" + id);
-      if (res?.payload?.Success) {
-        toast.success("Đã xóa");
-        getListRequest();
-      }
-    } catch (error: any) {
-      handleErrorHttp(error?.payload);
-    }
-  };
+
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleOpenModal = () => {
@@ -73,42 +66,44 @@ const RequestList = () => {
     messStore?.setIdRoom?.(null);
   };
 
-  //
   const getListRequest = async () => {
     try {
-      const res = await http.post("productRequest/paging", {
-        PageSize: 1000,
-        PageNumber: 1,
-        Filter: ` CreatorUserID  = ${userStore?.user?.UserID}  `,
-        SortOrder: " ModifiedDate desc ",
-        SearchKey: "",
-      });
-      setListRequest(res.payload.Data.Data);
-    } catch (error: any) {
-      // handleErrorHttp(error?.payload)
-    }
+      const param: IPagingParam = {
+        pageSize: 1000,
+        pageNumber: 1,
+        conditions: [{
+          key: "type",
+          condition: "different",
+          value: "EMPLOYEE_TASK"
+        }],
+        searchKey: "",
+        searchFields: [],
+        includeReferences: {
+          user: true,
+          TaskDetail: true
+        },
+        sortOrder: "createdAt desc",
+      };
+      const res = await RequestService.getPaging<ServiceResponse>(param);
+      setListRequest(res.data.data);
+    } catch (error: any) {}
   };
   useEffect(() => {
     getListRequest();
   }, []);
 
-  const getCategoryName = (categories: any) => {
-    const arrCate = categories?.split(";");
-    if (arrCate?.length === 0) {
-      return "";
-    }
-    return listCategory
-      ?.filter((i: any) => arrCate?.includes(i?.CategoryID?.toString()))
-      .map((i: any) => i.Name)
-      .join(", ");
-  };
-
   // REJECct
   const handleReject = async (id: any) => {
     try {
-      await http.put(`productRequest/reject?requestID=${id}`, {});
+      await RequestService.updateStatus(id, {
+        status: "REJECTED",
+        comment: reasonReject,
+      });
       toast.success("Đã từ chối");
       getListRequest();
+      setOpenReject(false);
+
+      setReasonReject("");
     } catch (error: any) {
       handleErrorHttp(error?.payload);
     }
@@ -122,117 +117,131 @@ const RequestList = () => {
     }
 
     try {
-      await http.put(
-        `productRequest/accept?requestID=${idPrice}&price=${pricce}`,
-        {}
-      );
+      await RequestService.updateStatus(idPrice, {
+        status: "APPROVED",
+        comment: "",
+        price: pricce,
+      });
       toast.success("Đã xác nhận");
       getListRequest();
       setOpenPrice(false);
+      setPrice("");
     } catch (error: any) {
       handleErrorHttp(error?.payload);
     }
   };
+
+  const getPriceArisen = (task: any) => {
+    const priceArisen = task?.TaskDetail?.reduce(
+      (acc: number, taskDetail: any) => acc + taskDetail.price,
+      0
+    );
+    return priceArisen;
+  }
   const renderListTable = () =>
     finalList?.map((request: any, index: number) => (
       <tr
         key={index}
-        className={`${
-          request?.ProductRequestID == idNoty ? "bg-green-200" : ""
-        }`}
+        className={`${request?.id == idNoty ? "bg-green-200" : ""}`}
       >
         <td key={index} className="p-4 border-b border-blue-gray-50">
           <div className="flex items-center gap-3 min-w-[30px]">
             <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
-              {request.ProductRequestID}
+              {request.id}
             </p>
           </div>
         </td>
         <td key={index} className="p-4 border-b border-blue-gray-50">
           <div className="flex items-center gap-3 min-w-[100px]">
             <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
-              {request?.CreatorUser?.FirstName +
-                " " +
-                request?.CreatorUser?.LastName}
+              {request?.user.fullName}
             </p>
           </div>
         </td>
         <td key={index} className="p-4 border-b border-blue-gray-50">
           <div className="flex items-center gap-3 min-w-[100px]">
             <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
-              {dateFormat3(request?.RequestTime)}
+              {dateFormat3(request?.createdAt)}
             </p>
           </div>
         </td>
         <td key={index} className="p-4 border-b border-blue-gray-50">
           <div className="flex items-center gap-3 min-w-[200px]">
             <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
-              {request?.Description}
+              {request?.description}
             </p>
           </div>
         </td>
-        <td className="p-4 border-b border-blue-gray-50 ">
-          <p className=" min-w-[150px] block antialiased font-sans text-sm leading-normal text-blue-gray-900 font-normal">
-            {formatPriceVND(request?.ProposedPrice)}
+        <td key={index} className="p-4 border-b border-blue-gray-50">
+          <div className="flex items-center gap-3 min-w-[100px]">
+            <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
+              {request.repairType == "IN_SHOP"
+                ? "Sửa tại cửa hàng"
+                : "Sửa tại nhà"}
+            </p>
+          </div>
+        </td>
+        <td className="p-4 border-b border-blue-gray-50">
+          <p className="  min-w-[100px] block antialiased font-sans text-sm leading-normal text-blue-gray-900 font-normal">
+            {formatPriceVND(request?.price)}
           </p>
         </td>
         <td className="p-4 border-b border-blue-gray-50">
-          <p className="  min-w-[150px] block antialiased font-sans text-sm leading-normal text-blue-gray-900 font-normal">
-            {request?.NegotiatedPrice != 0 && request?.NegotiatedPrice
-              ? formatPriceVND(request?.NegotiatedPrice)
-              : "Đang thoả thuận"}
+          <p className="  min-w-[100px] block antialiased font-sans text-sm leading-normal text-blue-gray-900 font-normal">
+            {formatPriceVND(getPriceArisen(request))}
           </p>
         </td>
         <td className="p-4 border-b border-blue-gray-50 min-w-[150px]">
           <Status
-            text={getRequestProductStatusText(request.Status)}
-            color={getRequestProductStatusColor(request.Status)}
+            text={getRequestProductStatusText(request.status)}
+            color={getRequestProductStatusColor(request.status)}
           />
         </td>
-        <td className=" min-w-[200px] p-4 border-b border-blue-gray-50 flex ">
+        <td className=" min-w-[300px] p-4 border-b border-blue-gray-50 flex ">
           <div className=" flex items-center gap-3">
-            {request.Status == 0 && (
+            {request.status == RequestStatus.PENDING && (
               <div className="flex gap-3 ">
                 <ButtonIcon
                   onClick={() => {
                     setOpenPrice(true);
-                    setIdPrice(request?.ProductRequestID);
+                    setIdPrice(request?.id);
                   }}
                   svg={"/accept.svg"}
                   tooltip="Xác nhận"
                 />
                 <ButtonIcon
-                  onClick={() => handleReject(request?.ProductRequestID)}
+                  onClick={() => {
+                    setCurrentId(request.id);
+                    setOpenReject(true);
+                  }}
                   svg={"/reject.svg"}
                   tooltip="Từ chối"
                 />
               </div>
             )}
-            {request.Status == RequestProductStatus.Approved && (
-              <div className="flex items-center gap-3">
-                <ButtonIcon
-                  onClick={() => {
-                    setOpenModal(true);
-                    setCurrentId(request.ProductRequestID);
-                  }}
-                  svg={"/create.svg"}
-                  tooltip="Tạo công việc"
-                />
-              </div>
-            )}
-            {request.Status != RequestProductStatus.Cancel &&
-              request.Status != RequestProductStatus.Reject &&
-              request.Status != RequestProductStatus.Pending && (
+            { request.status != RequestStatus.REJECTED
+            && request.status != RequestStatus.COMPLETED
+            && request.status != RequestStatus.CANCELLED
+            &&
+             (
+                <div className="flex items-center gap-3">
+                  <ButtonIcon
+                    onClick={() => {
+                      setOpenModal(true);
+                      setCurrentId(request.id);
+                    }}
+                    svg={"/create.svg"}
+                    tooltip="Tạo công việc"
+                  />
+                </div>
+              )}
+            {request.status != RequestStatus.CANCELLED &&
+              request.status != RequestStatus.REJECTED && (
                 <ButtonIcon
                   onClick={() => {
                     setOpenModalWork(true);
-                    setIdWork(request.ProductRequestID);
-                    setImages(request.Images);
-                    setIsDatcoc(
-                      request.DepositAmount &&
-                        request.DepositAmount > 0 &&
-                        request.DepositAmount < request?.NegotiatedPrice
-                    );
+                    setIdWork(request.id);
+                    setImages(request.images);
                   }}
                   svg={"/view.svg"}
                   tooltip="Xem  công việc"
@@ -242,20 +251,21 @@ const RequestList = () => {
             <ButtonIcon
               onClick={() => {
                 handleOpenModal();
-                setIdMess(request.ProductRequestID);
-                messStore?.setIdRoom?.(request.ProductRequestID);
+                setIdMess(request.id);
+                messStore?.setIdRoom?.(request.id);
               }}
               svg={"/mess.svg"}
               tooltip="Trao đổi"
             />
-              <ButtonIcon
-                onClick={() => {
-                  setOpenImage(true);
-                  setIdImage(request.ProductRequestID)
-                }}
-                svg={"/image.svg"}
-                tooltip="Xem ảnh minh họa"
-              />
+
+            <ButtonIcon
+              onClick={() => {
+                setOpenImage(true);
+                setIdImage(request.id);
+              }}
+              svg={"/image.svg"}
+              tooltip="Xem sản phẩm cần sửa"
+            />
           </div>
         </td>
       </tr>
@@ -265,7 +275,7 @@ const RequestList = () => {
   const query = useSearchParams();
   const idNoty = query.get("id");
   const finalList = [...listRequest];
-  const index = finalList.findIndex((i: any) => i.ProductRequestID == idNoty);
+  const index = finalList.findIndex((i: any) => i.id == idNoty);
   if (index >= 0) {
     const item = finalList[index];
     finalList.splice(index, 1);
@@ -307,12 +317,17 @@ const RequestList = () => {
                     </th>
                     <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
                       <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Giá mong muốn
+                        Hình thức sửa
                       </p>
                     </th>
                     <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
                       <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Giá chính thức
+                        Giá thỏa thuận
+                      </p>
+                    </th>
+                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                        Chi phí phát sinh
                       </p>
                     </th>
                     <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
@@ -341,11 +356,13 @@ const RequestList = () => {
       <NcModal
         isOpenProp={openModal}
         onCloseModal={() => setOpenModal(false)}
+        customClass="abc"
         renderContent={() => (
           <CreateWork
             callback={() => {
               setOpenModal(false);
               setCurrentId("");
+              getListRequest();
             }}
             idRequest={currentId}
           />
@@ -379,6 +396,7 @@ const RequestList = () => {
         onCloseModal={() => {
           setOpenPrice(false);
         }}
+        customClass="abc"
         renderContent={() => (
           <div>
             <div className="font-semibold mb-2">Giá thỏa thuận</div>
@@ -389,7 +407,7 @@ const RequestList = () => {
                 type="number"
               />
             </div>
-            <div className="mt-3">
+            <div className="mt-3 flex items-center justify-center">
               <ButtonPrimary onClick={() => handleApprove()}>
                 Xác nhận
               </ButtonPrimary>
@@ -399,17 +417,38 @@ const RequestList = () => {
         modalTitle="Nhập giá"
       />
       <NcModal
+        isOpenProp={openReject}
+        onCloseModal={() => {
+          setOpenReject(false);
+          setReasonReject("");
+        }}
+        customClass="abc"
+        renderContent={() => (
+          <div>
+            <div className="font-semibold mb-2">Nhập lý do từ chối</div>
+            <div className="w-[400px]">
+              <textarea
+                className="w-full p-2 mt-1 border border-gray-300 rounded"
+                value={reasonReject}
+                onChange={(e) => setReasonReject(e.target.value)}
+              />
+            </div>
+            <div className="mt-3 flex items-center justify-center">
+              <ButtonPrimary onClick={() => handleReject(currentId)}>
+                Xác nhận
+              </ButtonPrimary>
+            </div>
+          </div>
+        )}
+        modalTitle="Nhập lý do từ chối"
+      />
+      <NcModal
         isOpenProp={openImage}
         onCloseModal={() => {
           setOpenImage(false);
           setIdImage(null);
         }}
-        renderContent={() => (
-          <ListImageRequest
-          
-          id= {idImage}
-          />
-        )}
+        renderContent={() => <ListImageRequest id={idImage} />}
         modalTitle="Hình ảnh minh họa"
       />
     </div>

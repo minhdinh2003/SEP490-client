@@ -1,13 +1,9 @@
 "use client";
 
-import Label from "@/components/Label/Label";
 import NcInputNumber from "@/components/NcInputNumber";
 import Prices from "@/components/Prices";
-import { Product, PRODUCTS } from "@/data/data";
 import { useState } from "react";
 import ButtonPrimary from "@/shared/Button/ButtonPrimary";
-import Input from "@/shared/Input/Input";
-import ContactInfo from "./ContactInfo";
 import PaymentMethod from "./PaymentMethod";
 import ShippingAddress from "./ShippingAddress";
 import Image from "next/image";
@@ -16,7 +12,6 @@ import useCheckoutStore from "@/store/useCheckoutStorage";
 import toast from "react-hot-toast";
 import { handleErrorHttp } from "@/utils/handleError";
 import http from "@/http/http";
-import useCartStore from "@/store/useCartStore";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatPriceVND, getUrlImage } from "@/utils/helpers";
 import useAuthStore from "@/store/useAuthStore";
@@ -26,7 +21,7 @@ const CheckoutPage = () => {
   const userStore = useAuthStore() as any;
   const user: any = userStore?.user;
   const query = useSearchParams();
-  const isFromCart = query.get("fromCart") == "true";
+  const isFromRequest = query.get("fromRequest") == "true";
   const checkoutStore: any = useCheckoutStore();
   const router = useRouter();
   const [tabActive, setTabActive] = useState<
@@ -134,16 +129,17 @@ const CheckoutPage = () => {
   // CHECK OUT FROM CART
   const checkoutFromCart = async () => {
     try {
+      var request = checkoutStore.requestCheckout[0];
       const body = {
-        AddressID: AddressId,
-        BankCode: "",
-        Lang: "vn",
-        CartItems: checkoutStore.listCheckout.map((i: any) => ({
-          CartItemID: i.CartItemID,
-        })),
-        PaymentMethod: Number(method),
+        requestId: Number(request.ProductID),
+        // quantity: request.Quantity,
+        paymentMethod: Number(method),
+        fullName: user?.fullName,
+        address: getAddressString(),
+        phoneNumber: user?.phoneNumber
       };
-      const res = await http.post("Order/payInCart", body);
+
+      const res = await http.post("order/createOrderRepair", body);
       return res;
     } catch (error: any) {
       throw error;
@@ -180,7 +176,7 @@ const CheckoutPage = () => {
       return;
     }
     try {
-      const res = isFromCart
+      const res = isFromRequest
         ? await checkoutFromCart()
         : await checkoutProductNow();
       if (res.payload.success) {
@@ -203,8 +199,8 @@ const CheckoutPage = () => {
     }
   };
 
-  const listProductCheckout = isFromCart
-    ? checkoutStore.listCheckout
+  const listProductCheckout = isFromRequest
+    ? checkoutStore.requestCheckout
     : checkoutStore.productCheckout;
   const totalprice = listProductCheckout.reduce((total: number, item: any) => {
     return (total += 1 * item.Price);
@@ -235,7 +231,9 @@ const CheckoutPage = () => {
           <div className="flex-shrink-0 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-700 my-10 lg:my-0 lg:mx-10 xl:lg:mx-14 2xl:mx-16 "></div>
 
           <div className="w-full lg:w-[36%] ">
-            <h3 className="text-lg font-semibold">Danh sách đơn hàng</h3>
+            <h3 className="text-lg font-semibold">{
+              isFromRequest ? "Sản phẩm sửa chữa" : ("Danh sách đơn hàng") 
+              }</h3>
             <div className="mt-8 divide-y divide-slate-200/70 dark:divide-slate-700 ">
               {listProductCheckout.map(renderProduct)}
             </div>

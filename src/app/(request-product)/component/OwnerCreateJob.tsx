@@ -1,9 +1,5 @@
-// pages/index.tsx
-
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import Link from "next/link";
 import http from "@/http/http";
 import ButtonPrimary from "@/shared/Button/ButtonPrimary";
 import Input from "@/shared/Input/Input";
@@ -14,8 +10,13 @@ import { IPagingParam } from "@/contains/paging";
 import { ServiceResponse } from "@/type/service.response";
 import UserService from "@/http/userService";
 import TaskDetailService from "@/http/taskDetailService";
+import useAuthStore from "@/store/useAuthStore";
+import NcModal from "@/shared/NcModal/NcModal";
+import AddCustomer from "../owner-request/AddCustomer";
+import RequestService from "@/http/requestService";
 
-const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
+
+const OwnerCreateJob = ({ editItem, callback = () => {}, idRequest }: any) => {
   const initialData = {
     requestId: 0,
     assignedTo: 0,
@@ -23,12 +24,12 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
     description: "",
     status: "PENDING",
     deadline: "",
-    price: 0
+    price: 0,
+    userId: -1
   };
-  const [employees, setEmployees] = useState([]);
   const [formData, setFormData] = useState<any>(initialData);
   const [errors, setErrors] = useState<any>({});
-
+  const { user, logout } = useAuthStore() as any;
   useEffect(() => {
     if (editItem) {
       setFormData({
@@ -40,20 +41,13 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
   const validateForm = () => {
     let valid = true;
     let newErrors: any = {};
-
+    formData.assignedTo = user.id;
     if (!formData.title) {
       newErrors.title = "Tiêu đề là bắt buộc";
       valid = false;
     }
     if (!formData.description) {
       newErrors.description = "Mô tả là bắt buộc";
-      valid = false;
-    }
-    if (!formData.deadline) {
-      newErrors.deadline = "Ngày hoàn thành là bắt buộc";
-      valid = false;
-    } else if (new Date(formData.deadline) < new Date()) {
-      newErrors.deadline = "Ngày hoàn thành không thể ở quá khứ";
       valid = false;
     }
 
@@ -73,22 +67,32 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
 
     try {
       delete body.assignedTo;
-      if (!editItem) {
-        await TaskDetailService.post("", {
-          ...body,
-          requestId: idRequest,
-          deadline: new Date(body.deadline),
-          assignedTo: parseInt(formData.assignedTo),
-          price: parseInt(body.price),
-        });
-        toast.success("Tạo task thành công");
-        setFormData(initialData);
-        callback();
-      } else {
-        await http.put("productRequest", body);
-        toast.success("Đã sửa");
-        callback();
+      body.type = "EMPLOYEE_TASK";
+      var response = await RequestService.post<ServiceResponse>("", {
+        images: [],
+        reasonReject: "",
+        isUserConfirm: false,
+        userId: user.id,
+        price: 0,
+        description: "",
+        type: "EMPLOYEE_TASK",
+      });
+      if (!response.success) {
+        toast.error("Có lỗi xảy ra");
+        return;
       }
+      delete body.userId;
+      delete body.type;
+      await TaskDetailService.post("", {
+        ...body,
+        requestId: response.data,
+        deadline: new Date(body.deadline),
+        assignedTo: parseInt(formData.assignedTo),
+        price: parseInt(formData.price),
+      });
+      toast.success("Tạo task thành công");
+      setFormData(initialData);
+      callback();
     } catch (error: any) {
       handleErrorHttp(error?.payload);
     }
@@ -98,7 +102,8 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
     const value = e.target.value;
     setFormData({ ...formData, [key]: value });
   };
-  const getListEmployee = async () => {
+
+  const getCustomers = async () => {
     try {
       const param: IPagingParam = {
         pageSize: 1000,
@@ -107,7 +112,7 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
           {
             key: "role",
             condition: "equal",
-            value: "EMPLOYEE",
+            value: "USER",
           },
         ],
         searchKey: "",
@@ -117,15 +122,19 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
       };
       const res = await UserService.getPaging<ServiceResponse>(param);
 
-      setEmployees(res.data.data || []);
+      setCustomers(res.data.data || []);
     } catch (error: any) {
       handleErrorHttp(error?.payload);
     }
   };
 
   useEffect(() => {
-    getListEmployee();
+    getCustomers();
   }, []);
+
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [openAdd, setOpenAddCustomer] = useState(false);
   return (
     <div className="nc-CartPage">
       <main className="">
@@ -148,24 +157,36 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
             </label>
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
-                Nhân viên
+                Chọn Khách hàng
               </span>
-              <Select onChange={changeData("assignedTo")}>
-                {/* Placeholder option */}
-                <option value="">-- Chọn nhân viên --</option>
+              <div className="flex mt-2">
+                <Select
+                  onChange={changeData("userId")}
+                  value={selectedCustomer}
+                >
+                  <option value="">-- Chọn khách hàng --</option>
+                  {customers.map((employee: any) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.fullName}
+                    </option>
+                  ))}
+                </Select>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setOpenAddCustomer(true);
+                  }}
+                  className="ml-auto bg-white text-black px-4 py-2 rounded border border-gray-300 hover:bg-gray-100 transition duration-300"
+                >
+                  Thêm
+                </button>
+              </div>
 
-                {/* List of employees */}
-                {employees.map((employee: any) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.fullName}
-                  </option>
-                ))}
-              </Select>
-              {errors.assignedTo && (
-                <span className="text-red-500">{errors.assignedTo}</span>
+              {errors.userId && (
+                <span className="text-red-500">{errors.userId}</span>
               )}
             </label>
-            <label className="block">
+            {/* <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Chi phí phát sinh nếu có
               </span>
@@ -179,22 +200,7 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
               {errors.price && (
                 <span className="text-red-500">{errors.price}</span>
               )}
-            </label>
-            <label className="block">
-              <span className="text-neutral-800 dark:text-neutral-200">
-                Hạn hoàn thành
-              </span>
-              <Input
-                value={formData.deadline}
-                onChange={changeData("deadline")}
-                className="mt-1"
-                name="Title"
-                type="date"
-              />
-              {errors.deadline && (
-                <span className="text-red-500">{errors.deadline}</span>
-              )}
-            </label>
+            </label> */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Mô tả
@@ -217,8 +223,24 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
           </form>
         </div>
       </main>
+      <NcModal
+        isOpenProp={openAdd}
+        onCloseModal={() => {
+          setOpenAddCustomer(false);
+          // setIdImage(null);
+        }}
+        renderContent={() => (
+          <AddCustomer
+            callback={() => {
+              setOpenAddCustomer(false);
+              getCustomers();
+            }}
+          />
+        )}
+        modalTitle="Thêm người dùng"
+      />
     </div>
   );
 };
 
-export default CreateWork;
+export default OwnerCreateJob;

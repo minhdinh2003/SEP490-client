@@ -19,12 +19,14 @@ import { v4 as uuidv4 } from "uuid";
 import CommonClient from "./CommonClient";
 import "./globals.scss";
 import { Raleway, Roboto } from "next/font/google";
+import UserService from "@/http/userService";
+import { IPagingParam } from "@/contains/paging";
 const roboto = Roboto({
-  weight: ['400', '700','500'],
+  weight: ["400", "700", "500"],
   // style: ['normal', 'italic'],
-  subsets: ['vietnamese'],
+  subsets: ["vietnamese"],
   // display: 'swap',
-})
+});
 
 export let socket: any;
 export const connectionID = uuidv4();
@@ -59,10 +61,23 @@ function RootLayout({
     }
   }, []);
   useEffect(() => {
-    http
-      .get("User/notification")
+    const param: IPagingParam = {
+      pageSize: 1000,
+      pageNumber: 1,
+      conditions: [
+        {
+          key: "receiveId",
+          condition: "equal",
+          value: userStore?.user?.id,
+        },
+      ],
+      searchKey: "",
+      searchFields: [],
+      includeReferences: {},
+    };
+    var res = UserService.post("/notification", param)
       .then((res: any) => {
-        setNotification(res.payload.Data);
+        setNotification(res.data.data);
       })
       .catch(() => {});
   }, [user]);
@@ -72,7 +87,7 @@ function RootLayout({
   // Noti
 
   const connectSocket = () => {
-    const userID = user.UserID;
+    const userID = user.id;
     const url = `${process.env.NEXT_PUBLIC_SOCKET_URL}/api/${userID}/register?connectionId=${connectionID}`;
     const authToken = process.env.NEXT_PUBLIC_SOCKET_TOKEN!;
     fetch(url, {
@@ -97,25 +112,24 @@ function RootLayout({
         // nhận thông báo từ ng dùng
         socket.on("message", (message: any) => {
           //NotificationID
-          const data = JSON.parse(message?.RawData || {});
+          const data = JSON.parse(message?.rawData || {});
           if (
-            message.Type == "Customer_SendMessage_Request" ||
-            message.Type == "Creator_SendMessage_Request"
+            message.type == "PRODUCT_OWNER_CHAT_REQUEST" ||
+            message.type == "USER_CHAT_REQUEST"
           ) {
             messStore?.addMessageFromNoty({
               ...message,
-              Content: data.Message,
+              message: data.message,
             });
           }
 
           if (
             !notifications.find(
-              (i: any) => i.NotificationID == message.NotificationID
+              (i: any) => i.id == message.id
             )
           ) {
             addNotification(message);
           }
-          socket.on("bidUpdate", (message: any) => {});
         });
       })
       .catch((error) => {
@@ -123,7 +137,7 @@ function RootLayout({
       });
   };
   useEffect(() => {
-    if (user && user.UserID) {
+    if (user && user.id) {
       connectSocket();
     }
     return () => {
