@@ -121,7 +121,7 @@ const MainNav2Logged: FC<MainNav2LoggedProps> = () => {
             <>
               <AvatarDropdown />
               <CartDropdown />
-              {/* <NotyDropdown /> */}
+              <NotyDropdown />
             </>
           ) : (
             <div className="flex items-center gap-3">
