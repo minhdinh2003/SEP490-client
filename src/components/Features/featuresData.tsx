@@ -1,4 +1,4 @@
-import { Feature } from "@/types/feature";
+import { Feature } from "@/type/feature";
 import Image from "next/image";
 import Link from "next/link";
 
