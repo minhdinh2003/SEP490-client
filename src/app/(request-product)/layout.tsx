@@ -29,6 +29,11 @@ const pages: {
     role: ["OWNER"]
   },
   {
+    name: "Task nhân viên tạo",
+    link: "/employee-list",
+    role: ["OWNER"]
+  },
+  {
     name: "Danh sách Task",
     link: "/task-list",
     role: ["EMPLOYEE"]
@@ -41,7 +46,12 @@ const pages: {
   {
     name: "Tạo bill sửa chữa",
     link: "/owner-request",
-    role: ["OWNER", "EMPLOYEE"]
+    role: ["OWNER"]
+  },
+  {
+    name: "Tạo bill sửa chữa",
+    link: "/employee-request",
+    role: ["EMPLOYEE"]
   }
 ];
 
