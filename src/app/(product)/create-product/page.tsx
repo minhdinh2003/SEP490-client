@@ -16,6 +16,14 @@ const UploadPromotion = ({ editItem, callback = () => {} }: any) => {
     description: "",
     startDate: "",
     endDate: "",
+    type: "EVENT", // Mặc định là EVENT
+    discountType: "PERCENTAGE", // Mặc định là PERCENTAGE
+    discountValue: 0,
+    minUseRequest: 0,
+    minUseAmount: 0,
+    voucherUsed: 0, 
+    voucherQuantity: 0,
+    image: [],
   };
 
   const [formData, setFormData] = useState<any>(originPromotion);
@@ -44,25 +52,63 @@ const UploadPromotion = ({ editItem, callback = () => {} }: any) => {
     let valid = true;
     let newErrors: any = {};
 
+    // Kiểm tra tên chương trình khuyến mãi
     if (!formData.name) {
       newErrors.name = "Tên chương trình khuyến mãi là bắt buộc";
       valid = false;
     }
 
+    // Kiểm tra ngày bắt đầu
     if (!formData.startDate) {
       newErrors.startDate = "Ngày bắt đầu là bắt buộc";
       valid = false;
-    }
+    } 
+    // else if (new Date(formData.startDate) < new Date()) {
+    //   newErrors.startDate = "Ngày bắt đầu phải lớn hơn hoặc bằng ngày hiện tại";
+    //   valid = false;
+    // }
 
+    // Kiểm tra ngày kết thúc
     if (!formData.endDate) {
       newErrors.endDate = "Ngày kết thúc là bắt buộc";
       valid = false;
+    } else if (
+      formData.startDate &&
+      new Date(formData.endDate) <= new Date(formData.startDate)
+    ) {
+      newErrors.endDate = "Ngày kết thúc phải lớn hơn ngày bắt đầu";
+      valid = false;
     }
 
+    // Kiểm tra minUseRequest
+    if (
+      formData.type == "MAINTENANCE" &&
+      formData.minUseRequest !== null &&
+      formData.minUseRequest <= 0
+    ) {
+      newErrors.minUseRequest = "Số lần sử dụng tối thiểu phải lớn hơn 0";
+      valid = false;
+    }
+
+    if (
+      formData.type == "DISCOUNT" &&
+      formData.minUseAmount !== null &&
+      formData.minUseAmount <= 0
+    ) {
+      newErrors.minUseAmount = "Giá mua tối thiểu phải lớn hơn 0";
+      valid = false;
+    }
+
+    // Kiểm tra discountValue
+    if (formData.type !== "EVENT" && formData.discountValue <= 0) {
+      newErrors.discountValue = "Giá trị giảm giá phải lớn hơn 0";
+      valid = false;
+    }
+
+    // Cập nhật trạng thái lỗi
     setErrors(newErrors);
     return valid;
   };
-
   // Xử lý lưu dữ liệu
   const handleSaveData = async (e: any) => {
     e.preventDefault();
@@ -72,7 +118,12 @@ const UploadPromotion = ({ editItem, callback = () => {} }: any) => {
       ...formData,
       startDate: new Date(formData.startDate),
       endDate: new Date(formData.endDate),
-      image: listImage
+      image: listImage,
+      discountValue: parseInt(formData.discountValue),
+      minUseAmount: parseInt(formData.minUseAmount),
+      voucherQuantity: parseInt(formData.voucherQuantity),
+      voucherUsed: parseInt(formData.voucherUsed),
+      minUseRequest: parseInt(formData.minUseRequest),
     };
 
     try {
@@ -117,7 +168,6 @@ const UploadPromotion = ({ editItem, callback = () => {} }: any) => {
     }
     if (listUrl?.length > 0) {
       setListImage([...listImage, ...listUrl]);
-      
     }
   };
   const handleDeleteImage = (index: any) => {
@@ -125,7 +175,6 @@ const UploadPromotion = ({ editItem, callback = () => {} }: any) => {
     newListImage.splice(index, 1);
     setListImage(newListImage);
   };
-
 
   return (
     <div className="py-10">
@@ -182,7 +231,136 @@ const UploadPromotion = ({ editItem, callback = () => {} }: any) => {
                 <span className="text-red-500">{errors.endDate}</span>
               )}
             </div>
-            <label className="block text-center cursor-pointer bg-gray-50">
+            <div className="mb-4">
+              <label className="block text-gray-700">Loại chương trình</label>
+              <select
+                value={formData.type}
+                onChange={handleChange("type")}
+                className="w-full mt-1 p-2 border border-gray-300 rounded"
+              >
+                <option value="EVENT">Thay dầu/rửa xe</option>
+                <option value="DISCOUNT">Giảm giá khi mua hàng</option>
+                {/* <option value="MAINTENANCE">Giảm giá khi sửa chữa</option> */}
+              </select>
+            </div>
+            {formData.type === "DISCOUNT" && (
+              <div>
+                {" "}
+                <div className="mb-4">
+                  <label className="block text-gray-700">Loại giảm giá</label>
+                  <select
+                    value={formData.discountType}
+                    onChange={handleChange("discountType")}
+                    className="w-full mt-1 p-2 border border-gray-300 rounded"
+                  >
+                    <option value="PERCENTAGE">Phần trăm (%)</option>
+                    <option value="AMOUNT">Số tiền cố định</option>
+                  </select>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-700">
+                    Giá trị giảm giá
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.discountValue}
+                    onChange={handleChange("discountValue")}
+                    placeholder="Nhập giá trị giảm giá"
+                    className="w-full mt-1 p-2 border border-gray-300 rounded"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-700">
+                    Giá mua tối thiểu
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.minUseAmount || 0}
+                    onChange={handleChange("minUseAmount")}
+                    placeholder="Nhập giá tối thiểu"
+                    className="w-full mt-1 p-2 border border-gray-300 rounded"
+                  />
+                  {errors.minUseAmount && (
+                    <span className="text-red-500">{errors.minUseAmount}</span>
+                  )}
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-700">
+                    Số lượng voucher
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.voucherQuantity || 0}
+                    onChange={handleChange("voucherQuantity")}
+                    placeholder="Nhập số lượng voucher"
+                    className="w-full mt-1 p-2 border border-gray-300 rounded"
+                  />
+                  {errors.voucherQuantity && (
+                    <span className="text-red-500">{errors.voucherQuantity}</span>
+                  )}
+                </div>
+              </div>
+            )}
+            {formData.type === "MAINTENANCE" && (
+              <div>
+                {" "}
+                <div className="mb-4">
+                  <label className="block text-gray-700">Loại giảm giá</label>
+                  <select
+                    value={formData.discountType}
+                    onChange={handleChange("discountType")}
+                    className="w-full mt-1 p-2 border border-gray-300 rounded"
+                  >
+                    <option value="PERCENTAGE">Phần trăm (%)</option>
+                    <option value="AMOUNT">Số tiền cố định</option>
+                  </select>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-700">
+                    Giá trị giảm giá
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.discountValue}
+                    onChange={handleChange("discountValue")}
+                    placeholder="Nhập giá trị giảm giá"
+                    className="w-full mt-1 p-2 border border-gray-300 rounded"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-700">
+                    Số lần(lần sửa tối thiểu để nhận voucher)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.minUseRequest || 0}
+                    onChange={handleChange("minUseRequest")}
+                    placeholder="Nhập số lượt sử dụng tối đa"
+                    className="w-full mt-1 p-2 border border-gray-300 rounded"
+                  />
+                  {errors.minUseRequest && (
+                    <span className="text-red-500">{errors.minUseRequest}</span>
+                  )}
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-700">
+                    Số lượng voucher
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.voucherQuantity || 0}
+                    onChange={handleChange("voucherQuantity")}
+                    placeholder="Nhập số lượng voucher"
+                    className="w-full mt-1 p-2 border border-gray-300 rounded"
+                  />
+                  {errors.voucherQuantity && (
+                    <span className="text-red-500">{errors.voucherQuantity}</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <label className="mb-4 block text-center cursor-pointer bg-gray-50">
               <div className="flex flex-col justify-center items-center gap-10 p-7">
                 <Image src="/image1.svg" alt="" width={100} height={100} />
                 <span className="text-gray-700 flex justify-center items-center gap-2">

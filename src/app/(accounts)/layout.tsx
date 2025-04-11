@@ -37,6 +37,10 @@ const pages: {
     link: "/account-history",
   },
   {
+    name: "Danh sách voucher",
+    link: "/account-voucher",
+  },
+  {
     name: "Đổi mật khẩu",
     link: "/account-password",
   },

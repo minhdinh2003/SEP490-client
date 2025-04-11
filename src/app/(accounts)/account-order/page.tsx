@@ -74,8 +74,14 @@ const AccountOrder = () => {
     getListOrder();
   }, [activeTab]);
   const finalList = listOrder?.slice() || [];
-  const renderProductItem = (item: any, index: number, status?: any) => {
+  const renderProductItem = (
+    item: any,
+    index: number,
+    status?: any,
+    totalAmount?: any
+  ) => {
     const { product } = item;
+
     return (
       <div className="pt-5 pb-10 border-b last:border-b-0">
         {product?.ProductCode && (
@@ -109,15 +115,23 @@ const AccountOrder = () => {
                     {product?.name}
                   </h3>
                 </div>
-                <Prices price={item?.price} className="mt-0.5 ml-2" />
+                <Prices price={item?.totalAmount} className="mt-0.5 ml-2" />
               </div>
             </div>
+            {item?.voucherCode && (
+              <div className="text-sm text-gray-500 dark:text-slate-400">
+                <span className="font-bold text-green-500">
+                  Mã giảm giá:
+                  {item?.voucherCode}
+                </span>
+              </div>
+            )}
             <div className="flex items-end justify-between flex-1 text-sm">
               <p className="flex items-center text-gray-500 dark:text-slate-400">
                 <span className="inline-block ">x</span>
                 <span className="ml-2">{item?.quantity}</span>
               </p>
-              {item?.status == StatusOrder.DELIVERED  && (
+              {item?.status == StatusOrder.DELIVERED && (
                 <div className="flex">
                   <Link href={`/product-detail/${product?.id}`}>
                     <button
@@ -165,22 +179,30 @@ const AccountOrder = () => {
                 <span className="inline-block ">x</span>
                 <span className="ml-2">1</span>
               </p>
-
             </div>
           </div>
         </div>
       </div>
     );
   };
-  const changeStatusDel = async (orderId: any, status: any) => {
+  const changeStatus = async (orderId: any, status: any) => {
     try {
       await http.put(`order/status?orderId=${orderId}&status=${status}`, {});
       setReget(reget + 1);
       getListOrder();
-      if (status === 6) {
-        toast.success("Đã nhận hàng");
-      } else {
-        toast.success("Đã hủy đơn hàng");
+      switch (status) {
+        case "PROCESSING":
+          toast.success("Đã chuyển đơn hàng");
+          break;
+        case "SHIPPED":
+          toast.success("Đã giao hàng");
+          break;
+        case "CANCELLED":
+          toast.success("Đã hủy đơn hàng");
+          break;
+        default:
+          toast.success("Đã chuyển trạng thái đơn hàng");
+          break;
       }
     } catch (error: any) {
       handleErrorHttp(error?.payload);
@@ -234,16 +256,17 @@ const AccountOrder = () => {
             </ButtonSecondary>
             {order?.status == StatusOrder.PROCESSING && (
               <ButtonPrimary
-                onClick={() => changeStatusDel(order?.id, "SHIPPED")}
+                onClick={() => changeStatus(order?.id, "SHIPPED")}
                 sizeClass="py-2.5 px-4 sm:px-6"
                 fontSize="text-sm font-medium"
               >
                 Đã nhận được hàng
               </ButtonPrimary>
             )}
-            {order?.paymentMethod == StatusOrder.PENDING && (
+            {(order?.status == StatusOrder.PENDING ||
+              order?.status == StatusOrder.PROCESSING) && (
               <ButtonPrimary
-                onClick={() => changeStatusDel(order?.id, 7)}
+                onClick={() => changeStatus(order?.id, "CANCELLED")}
                 sizeClass="py-2.5 px-4 sm:px-6"
                 fontSize="text-sm font-medium"
               >
@@ -257,6 +280,8 @@ const AccountOrder = () => {
             ?.map((i: any) => ({
               ...i,
               status: order?.ShippingStatus,
+              totalAmount: order?.totalAmount,
+              voucherCode: order?.voucherCode,
             }))
             ?.map(renderProductItem)}
         </div>
@@ -300,16 +325,16 @@ const AccountOrder = () => {
             </ButtonSecondary>
             {order?.status == StatusOrder.PROCESSING && (
               <ButtonPrimary
-                onClick={() => changeStatusDel(order?.id, "SHIPPED")}
+                onClick={() => changeStatus(order?.id, "SHIPPED")}
                 sizeClass="py-2.5 px-4 sm:px-6"
                 fontSize="text-sm font-medium"
               >
                 Đã nhận được hàng
               </ButtonPrimary>
             )}
-            {order?.paymentMethod == StatusOrder.PENDING && (
+            {order?.status == StatusOrder.PENDING && (
               <ButtonPrimary
-                onClick={() => changeStatusDel(order?.id, 7)}
+                onClick={() => changeStatus(order?.id, "CANCELLED")}
                 sizeClass="py-2.5 px-4 sm:px-6"
                 fontSize="text-sm font-medium"
               >

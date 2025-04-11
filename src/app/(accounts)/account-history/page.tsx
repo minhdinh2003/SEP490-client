@@ -57,13 +57,13 @@ const TYPE_TRANSACTION: any = {
       Danh sách yêu thích
     </div>
   ),
-  "Bank": (
+  Bank: (
     <div>
       <FontAwesomeIcon
         icon={faShoppingCart}
         className="mr-1 text-xl text-red-500"
       />{" "}
-      Sản phẩm 
+      Sản phẩm
     </div>
   ),
 };
@@ -77,7 +77,13 @@ const TransactionTable = () => {
       const param: IPagingParam = {
         pageSize: 1000,
         pageNumber: 1,
-        conditions: [],
+        conditions: [
+          {
+            key: "userId",
+            condition: "Equal",
+            value: userStorage?.user?.id,
+          },
+        ],
         searchKey: "",
         searchFields: [],
         includeReferences: {},
