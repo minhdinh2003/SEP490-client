@@ -77,7 +77,7 @@ const BlogDetailsPage = () => {
             </div>
 
             {/* Cột giữa: Nội dung chính */}
-            <div className="col-span-1 md:col-span-1 px-4">
+            <div className="w-[calc(100%-256px)] col-span-1 md:col-span-1 px-4">
               <div>
                 <h4 className="flex justify-center mb-8 text-2xl font-bold leading-tight text-black dark:text-white sm:text-3xl sm:leading-tight">
                   {promotion.name}
