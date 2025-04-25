@@ -1,7 +1,6 @@
 "use client";
 import SiteHeader from "@/app/SiteHeader";
 import "@/fonts/line-awesome-1.3.0/css/line-awesome.css";
-import http from "@/http/http";
 import ToastProvider from "@/provider/ToastProvider";
 import Footer from "@/shared/Footer/Footer";
 import useAuthStore from "@/store/useAuthStore";
@@ -9,7 +8,6 @@ import useCartStore from "@/store/useCartStore";
 import useMessageStore from "@/store/useMessStore";
 import useNotyStore from "@/store/useNotyStore";
 import "@/styles/index.scss";
-import { Poppins } from "next/font/google";
 import { usePathname } from "next/navigation";
 import "rc-slider/assets/index.css";
 import { useEffect } from "react";
@@ -18,7 +16,7 @@ import { io } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
 import CommonClient from "./CommonClient";
 import "./globals.scss";
-import { Raleway, Roboto } from "next/font/google";
+import { Roboto } from "next/font/google";
 import UserService from "@/http/userService";
 import { IPagingParam } from "@/contains/paging";
 const roboto = Roboto({
