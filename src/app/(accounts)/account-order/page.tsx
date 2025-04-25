@@ -84,18 +84,6 @@ const AccountOrder = () => {
 
     return (
       <div className="pt-5 pb-10 border-b last:border-b-0">
-        {product?.ProductCode && (
-          <div
-            onClick={() => router.push(`/product-code/${product?.ProductCode}`)}
-            className="mb-5 text-gray-500"
-          >
-            Mã định danh :
-            <span className="font-bold text-green-500 cursor-pointer">
-              {" "}
-              {product?.ProductCode}
-            </span>
-          </div>
-        )}
         <div key={index} className="flex ">
           <div className="relative flex-shrink-0 w-16 h-24 overflow-hidden sm:w-20 rounded-xl bg-slate-100">
             <Image
@@ -219,6 +207,17 @@ const AccountOrder = () => {
   useEffect(() => {
     setListOrder(listAll);
   }, [activeTab, listAll]);
+
+  const handleRefund = async (orderId: string) => {
+    try {
+      await http.put(`order/refund?orderId=${orderId}`, {});
+      setReget(reget + 1);
+      getListOrder();
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi hoàn tiền");
+    }
+  };
+
   const renderOrder = () => {
     return finalList?.map((order: any, index: number) => (
       <div
@@ -243,6 +242,13 @@ const AccountOrder = () => {
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1.5 sm:mt-2">
               {PAYMENT_METHOD[order?.paymentMethod]}
             </p>
+            {order?.status === StatusOrder.CANCELLED &&
+              order?.isPay &&
+              order?.isConfirmRefund && (
+                <p className="text-green-500 text-sm font-medium mt-2">
+                  Đã hoàn tiền
+                </p>
+              )}
           </div>
           <div className="flex flex-col gap-3 mt-3 sm:mt-0">
             <ButtonSecondary
@@ -273,6 +279,22 @@ const AccountOrder = () => {
                 Hủy đơn
               </ButtonPrimary>
             )}
+
+            {/* Thêm button "Đã nhận hoàn tiền" */}
+            {order?.status === StatusOrder.CANCELLED &&
+              order?.isPay &&
+              !order?.isConfirmRefund && (
+                <ButtonPrimary
+                  onClick={() => handleRefund(order?.id)}
+                  sizeClass="py-2.5 px-4 sm:px-6"
+                  fontSize="text-sm font-medium"
+                >
+                  Đã nhận hoàn tiền
+                </ButtonPrimary>
+              )}
+
+            {/* Hiển thị đoạn text "Đã hoàn tiền" */}
+
           </div>
         </div>
         <div className="p-2 border-t divide-y border-slate-200 dark:border-slate-700 sm:p-8 sm:pt-0 sm:pb-0 divide-y-slate-200 dark:divide-slate-700">
