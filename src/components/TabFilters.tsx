@@ -9,15 +9,16 @@ import Checkbox from "@/shared/Checkbox/Checkbox";
 import Slider from "rc-slider";
 import Radio from "@/shared/Radio/Radio";
 import { useGetData } from "@/hooks/useGetData";
+import Select from "react-select";
 
 const PRICE_RANGE = [0, 5000000000];
 
 const DATA_sortOrderRadios = [
-  { name: "Giá từ thấp đến cao", id: "Price asc" },
-  { name: "Giá từ cao đến thấp", id: "Price desc" },
+  { name: "Giá từ thấp đến cao", id: "price asc" },
+  { name: "Giá từ cao đến thấp", id: "price desc" },
 ];
 
-const TabFilters = ({ filter, setFilter }: any) => {
+const TabFilters = ({ activeTab, filter, setFilter }: any) => {
   const [isOpenMoreFilter, setIsOpenMoreFilter] = useState(false);
 
   const { data: listCategory } = useGetData("brand/all");
@@ -29,22 +30,13 @@ const TabFilters = ({ filter, setFilter }: any) => {
   const openModalMoreFilter = () => setIsOpenMoreFilter(true);
 
   useEffect(() => {
-    
     if (isOpenMoreFilter) {
       setSortOrderStates(filter.sort);
       setRangePrices([filter.minPrice || 0, filter.maxPrice || PRICE_RANGE[1]]);
-      console.log(filter.categories)
-      setCategoriesState(filter.categories)
+      setCategoriesState(filter.categories);
+      setSortOrderStates(filter.sort);
     }
   }, [isOpenMoreFilter]);
-
-  const handleChangeCategories = (checked: boolean, id: any) => {
-    let data = categoriesState.filter((i) => i !== id);
-    if (checked){
-      data.push(id);
-    }
-    setCategoriesState(data);
-  };
 
   const renderXClear = () => {
     return (
@@ -73,45 +65,52 @@ const TabFilters = ({ filter, setFilter }: any) => {
       id: any;
     }[]
   ) => {
-    const list1 = data.filter((_, i) => i < data.length / 2);
-    const list2 = data.filter((_, i) => i >= data.length / 2);
-
-    const handleChange = handleChangeCategories;
-
     return (
-      <div className="grid grid-cols-2 gap-x-4 sm:gap-x-8 gap-8">
-        <div className="flex flex-col space-y-5">
-          {list1.map((item) => (
-            <Checkbox
-              key={item.name}
-              name={item.name}
-              subLabel={item.description}
-              label={item.name}
-              defaultChecked={categoriesState.indexOf(item.id) >= 0}
-              onChange={(e: any) => {
-                handleChange(e, item.id);
-              }}
-            />
-          ))}
-        </div>
-        <div className="flex flex-col space-y-5">
-          {list2.map((item) => (
-            <Checkbox
-              onChange={(e: any) => {
-                handleChange(e, item.id);
-              }}
-              key={item.name}
-              name={item.name}
-              subLabel={item.description}
-              label={item.name}
-              defaultChecked={categoriesState.indexOf(item.id) >= 0}
-            />
-          ))}
-        </div>
+      <div className="flex flex-col space-y-5">
+        <Select
+          value={categoriesState}
+          isMulti
+          options={data.map((x) => ({ value: x.id, label: x.name }))}
+          onChange={(selected: any) => setCategoriesState(selected)}
+          placeholder="Chọn loại hãng xe..."
+          className="custom-select"
+        ></Select>
       </div>
     );
   };
+  const [selectedPartTypes, setSelectedPartTypes] = useState<string[]>([]);
 
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(value);
+  };
+  const PART_TYPES = {
+    ENGINE: "Động cơ",
+    TRANSMISSION: "Hộp số",
+    BRAKE_SYSTEM: "Hệ thống phanh",
+    SUSPENSION: "Hệ thống treo",
+    ELECTRICAL: "Hệ thống điện",
+    COOLING_SYSTEM: "Hệ thống làm mát",
+    EXHAUST_SYSTEM: "Hệ thống xả",
+    BODY_PARTS: "Phần thân xe",
+    INTERIOR: "Nội thất",
+    EXTERIOR: "Ngoại thất",
+    TIRES_WHEELS: "Lốp và bánh xe",
+    LIGHTING: "Hệ thống chiếu sáng",
+    FILTERS: "Lọc",
+    BELTS: "Dây đai",
+    BATTERIES: "Ắc quy",
+    STEERING: "Hệ thống lái",
+    AIR_CONDITIONING: "Hệ thống điều hòa",
+    SAFETY: "An toàn",
+  };
+  const options = Object.entries(PART_TYPES).map(([value, label]) => ({
+    value,
+    label,
+  }));
+  const [selectedOptions, setSelectedOptions] = useState<any[]>([]);
   const renderTabMobileFilter = () => {
     return (
       <div className="flex-shrink-0">
@@ -195,65 +194,83 @@ const TabFilters = ({ filter, setFilter }: any) => {
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                <Dialog.Overlay className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60"
-                />
-                </Transition.Child>
-  
-                <span
-                  className="inline-block h-screen align-middle"
-                  aria-hidden="true"
-                >
-                  &#8203;
-                </span>
-                <Transition.Child
-                  className="inline-block h-screen w-full max-w-4xl"
-                  enter="ease-out duration-300"
-                  enterFrom="opacity-0 scale-95"
-                  enterTo="opacity-100 scale-100"
-                  leave="ease-in duration-200"
-                  leaveFrom="opacity-100 scale-100"
-                  leaveTo="opacity-0 scale-95"
-                >
-                  <div className="inline-flex flex-col w-full text-left align-middle transition-all transform bg-white dark:bg-neutral-900 dark:border dark:border-neutral-700 dark:text-neutral-100 h-full">
-                    <div className="relative flex-shrink-0 px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 text-center">
-                      <Dialog.Title
-                        as="h3"
-                        className="text-lg font-medium leading-6 text-gray-900"
-                      >
-                        Lọc sản phẩm
-                      </Dialog.Title>
-                      <span className="absolute left-3 top-3">
-                        <ButtonClose onClick={closeModalMoreFilter} />
-                      </span>
-                    </div>
-  
-                    <div className="flex-grow overflow-y-auto">
-                      <div className="px-6 sm:px-8 md:px-10 divide-y divide-neutral-200 dark:divide-neutral-800">
+                <Dialog.Overlay className="fixed inset-0 bg-black bg-opacity-40 dark:bg-opacity-60" />
+              </Transition.Child>
+
+              <span
+                className="inline-block h-screen align-middle"
+                aria-hidden="true"
+              >
+                &#8203;
+              </span>
+              <Transition.Child
+                className="inline-block h-screen w-full max-w-4xl"
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <div className="inline-flex flex-col w-full text-left align-middle transition-all transform bg-white dark:bg-neutral-900 dark:border dark:border-neutral-700 dark:text-neutral-100 h-full">
+                  <div className="relative flex-shrink-0 px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 text-center">
+                    <Dialog.Title
+                      as="h3"
+                      className="text-lg font-medium leading-6 text-gray-900"
+                    >
+                      Lọc sản phẩm
+                    </Dialog.Title>
+                    <span className="absolute left-3 top-3">
+                      <ButtonClose onClick={closeModalMoreFilter} />
+                    </span>
+                  </div>
+
+                  <div className="flex-grow overflow-y-auto">
+                    <div className="px-6 sm:px-8 md:px-10 divide-y divide-neutral-200 dark:divide-neutral-800">
+                      <div className="py-7">
+                        <h3 className="text-xl font-medium">Hãng xe</h3>
+                        <div className="mt-6 relative">
+                          {renderMoreFilterItem(listCategory)}
+                        </div>
+                      </div>
+                      {activeTab === 1 && (
                         <div className="py-7">
-                          <h3 className="text-xl font-medium">
-                            Hãng xe
-                          </h3>
+                          <h3 className="text-xl font-medium">Loại phụ tùng</h3>
                           <div className="mt-6 relative">
-                            {renderMoreFilterItem(listCategory)}
+                            <Select
+                              isMulti
+                              options={options}
+                              value={selectedPartTypes}
+                              onChange={(selected: any) =>
+                                setSelectedPartTypes(selected)
+                              }
+                              placeholder="Chọn loại phụ tùng..."
+                              className="custom-select"
+                            />
                           </div>
                         </div>
-                        <div className="py-7">
-                          <h3 className="text-xl font-medium">Khoảng giá</h3>
-                          <div className="mt-6 relative">
-                            <div className="relative flex flex-col space-y-8">
-                              <div className="space-y-5">
-                                <Slider
-                                  range
-                                  className="text-red-400"
-                                  min={PRICE_RANGE[0]}
-                                  max={PRICE_RANGE[1]}
-                                  defaultValue={rangePrices}
-                                  allowCross={false}
-                                  onChange={(_input: number | number[]) =>
-                                    setRangePrices(_input as number[])
-                                  }
-                                />
-                              </div>
+                      )}
+
+                      <div className="py-7">
+                        <h3 className="text-xl font-medium">Khoảng giá</h3>
+                        <div className="mt-6 relative">
+                          <div className="relative flex flex-col space-y-8">
+                            <div className="space-y-5">
+                              {/* Slider */}
+                              <Slider
+                                range
+                                className="text-red-400"
+                                min={PRICE_RANGE[0]}
+                                max={PRICE_RANGE[1]}
+                                defaultValue={rangePrices}
+                                allowCross={false}
+                                onChange={(_input: number | number[]) => {
+                                  const [min, max] = _input as number[];
+                                  setRangePrices([min, max]);
+                                }}
+                              />
+
+                              {/* Input Số */}
                               <div className="flex justify-between space-x-5">
                                 <div>
                                   <label
@@ -263,16 +280,24 @@ const TabFilters = ({ filter, setFilter }: any) => {
                                     Giá thấp nhất
                                   </label>
                                   <div className="mt-1 relative rounded-md">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                      <span className="text-neutral-500 sm:text-sm"></span>
-                                    </div>
                                     <input
-                                      type="text"
+                                      type="number"
                                       name="minPrice"
-                                      disabled
                                       id="minPrice"
-                                      className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-3 sm:text-sm border-neutral-200 rounded-full text-neutral-900"
+                                      className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-3 pr-3 sm:text-sm border-neutral-200 rounded-full text-neutral-900"
                                       value={rangePrices[0]}
+                                      onChange={(e) => {
+                                        const newMin = Math.max(
+                                          Number(e.target.value),
+                                          PRICE_RANGE[0]
+                                        );
+                                        setRangePrices([
+                                          newMin,
+                                          rangePrices[1],
+                                        ]);
+                                      }}
+                                      min={PRICE_RANGE[0]}
+                                      max={rangePrices[1]}
                                     />
                                   </div>
                                 </div>
@@ -284,16 +309,24 @@ const TabFilters = ({ filter, setFilter }: any) => {
                                     Giá cao nhất
                                   </label>
                                   <div className="mt-1 relative rounded-md">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                      <span className="text-neutral-500 sm:text-sm"></span>
-                                    </div>
                                     <input
-                                      type="text"
-                                      disabled
+                                      type="number"
                                       name="maxPrice"
                                       id="maxPrice"
-                                      className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-3 sm:text-sm border-neutral-200 rounded-full text-neutral-900"
+                                      className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-3 pr-3 sm:text-sm border-neutral-200 rounded-full text-neutral-900"
                                       value={rangePrices[1]}
+                                      onChange={(e) => {
+                                        const newMax = Math.min(
+                                          Number(e.target.value),
+                                          PRICE_RANGE[1]
+                                        );
+                                        setRangePrices([
+                                          rangePrices[0],
+                                          newMax,
+                                        ]);
+                                      }}
+                                      min={rangePrices[0]}
+                                      max={PRICE_RANGE[1]}
                                     />
                                   </div>
                                 </div>
@@ -301,82 +334,113 @@ const TabFilters = ({ filter, setFilter }: any) => {
                             </div>
                           </div>
                         </div>
-                        <div className="py-7">
-                          <h3 className="text-xl font-medium">Sắp xếp</h3>
-                          <div className="mt-6 relative">
-                            <div className="relative flex flex-col space-y-5">
-                              {DATA_sortOrderRadios.map((item) => (
-                                <Radio
-                                  id={item.id}
-                                  key={item.id}
-                                  name="radioNameSort"
-                                  label={item.name}
-                                  defaultChecked={sortOrderStates === item.id}
-                                  onChange={setSortOrderStates}
-                                  defauttValue={sortOrderStates}
-                                />
-                              ))}
-                            </div>
+                      </div>
+                      <div className="flex space-x-2 mt-4">
+                        <button
+                          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                          onClick={() => setRangePrices([0, 5000000])}
+                        >
+                          Dưới 5 triệu
+                        </button>
+                        <button
+                          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                          onClick={() => setRangePrices([5000000, 10000000])}
+                        >
+                          5 - 10 triệu
+                        </button>
+                        <button
+                          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                          onClick={() =>
+                            setRangePrices([10000000, PRICE_RANGE[1]])
+                          }
+                        >
+                          Trên 10 triệu
+                        </button>
+                      </div>
+                      <div className="py-7">
+                        <h3 className="text-xl font-medium">Sắp xếp</h3>
+                        <div className="mt-6 relative">
+                          <div className="relative flex flex-col space-y-5">
+                            {DATA_sortOrderRadios.map((item) => (
+                              <Radio
+                                id={item.id}
+                                key={item.id}
+                                name="radioNameSort"
+                                label={item.name}
+                                defaultChecked={sortOrderStates === item.id}
+                                onChange={setSortOrderStates}
+                                defauttValue={sortOrderStates}
+                              />
+                            ))}
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div className="p-6 flex-shrink-0 bg-neutral-50 dark:bg-neutral-900 dark:border-t dark:border-neutral-800 flex items-center justify-between">
-                      <ButtonThird
-                        onClick={() => {
-                          setRangePrices(PRICE_RANGE);
-                          setCategoriesState([]);
-                          setSortOrderStates("");
-                          setFilter({
-                            ...filter,
-                            sort: "",
-                            maxPrice: PRICE_RANGE[1],
-                            minPrice: PRICE_RANGE[0],
-                            categories: []
-                          });
-                          closeModalMoreFilter();
-                        }}
-                        sizeClass="px-4 py-2 sm:px-5"
-                      >
-                        Xóa
-                      </ButtonThird>
-                      <ButtonPrimary
-                        onClick={() => {
-                          setFilter({
-                            ...filter,
-                            sort: sortOrderStates,
-                            maxPrice: rangePrices[1],
-                            minPrice: rangePrices[0],
-                            categories: categoriesState
-                          });
-                          closeModalMoreFilter();
-                        }}
-                        sizeClass="px-4 py-2 sm:px-5"
-                      >
-                        Áp dụng
-                      </ButtonPrimary>
-                    </div>
                   </div>
-                </Transition.Child>
-              </div>
-            </Dialog>
-          </Transition>
-        </div>
-      );
-    };
-  
-    return (
-      <div className="flex lg:space-x-4">
-        {/* FOR DESKTOP */}
-        <div className="hidden lg:flex flex-1 space-x-4"></div>
-  
-        {/* FOR RESPONSIVE MOBILE */}
-        <div className="flex overflow-x-auto space-x-4">
-          {renderTabMobileFilter()}
-        </div>
+                  <div className="p-6 flex-shrink-0 bg-neutral-50 dark:bg-neutral-900 dark:border-t dark:border-neutral-800 flex items-center justify-between">
+                    <ButtonThird
+                      onClick={() => {
+                        setRangePrices(PRICE_RANGE);
+                        setCategoriesState([]);
+                        setSortOrderStates("");
+                        setFilter({
+                          ...filter,
+                          sort: "",
+                          maxPrice: PRICE_RANGE[1],
+                          minPrice: PRICE_RANGE[0],
+                          categories: [],
+                        });
+                        closeModalMoreFilter();
+                      }}
+                      sizeClass="px-4 py-2 sm:px-5"
+                    >
+                      Xóa
+                    </ButtonThird>
+                    <ButtonPrimary
+                      onClick={() => {
+                        console.log({
+                          ...filter,
+                          sort: sortOrderStates,
+                          maxPrice: rangePrices[1],
+                          minPrice: rangePrices[0],
+                          categories: categoriesState,
+                          partTypes: selectedPartTypes,
+                        });
+                        setFilter({
+                          ...filter,
+                          sort: sortOrderStates,
+                          maxPrice: rangePrices[1],
+                          minPrice: rangePrices[0],
+                          categories: categoriesState || [],
+                          partTypes: selectedPartTypes || [],
+                        });
+                        closeModalMoreFilter();
+                      }}
+                      sizeClass="px-4 py-2 sm:px-5"
+                    >
+                      Áp dụng
+                    </ButtonPrimary>
+                  </div>
+                </div>
+              </Transition.Child>
+            </div>
+          </Dialog>
+        </Transition>
       </div>
     );
   };
-  
-  export default TabFilters;
-  
+
+  return (
+    <div className="flex lg:space-x-4">
+      {/* FOR DESKTOP */}
+      <div className="hidden lg:flex flex-1 space-x-4"></div>
+
+      {/* FOR RESPONSIVE MOBILE */}
+      <div className="flex overflow-x-auto space-x-4">
+        {renderTabMobileFilter()}
+      </div>
+    </div>
+  );
+};
+
+export default TabFilters;
