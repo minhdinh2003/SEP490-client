@@ -55,6 +55,7 @@ const WorkDetail = ({
   const [listImage, setListImage] = useState<string[]>([]);
   const userStore: any = useAuthStore();
   const isEmployee = userStore.user.role == "EMPLOYEE";
+  const isOwner = userStore.user.role == "OWNER";
   const [work, setWork] = useState<any>([]);
   function renderTableRow(label: any, value: any) {
     return (
@@ -127,11 +128,12 @@ const WorkDetail = ({
         images: listImage,
         comments: work.comments,
         price: work.price,
-      }
-      if (work.assignedTo){
+        address: work.address,
+      };
+      if (work.assignedTo) {
         data.assignee = {
           connect: { id: work.assignedTo },
-        }
+        };
       }
       var result = await TaskDetailService.updateById(work.id, data);
       toast.success("Đã cập nhật");
@@ -188,7 +190,10 @@ const WorkDetail = ({
                     onChange={(e: any) =>
                       setWork({ ...work, description: e.target.value })
                     }
-                    disabled={work.status == WorkStatus.Done || work.status == WorkStatus.Reject}
+                    disabled={
+                      work.status == WorkStatus.Done ||
+                      work.status == WorkStatus.Reject
+                    }
                   ></TextArea>
                 )}
                 {renderTableRow(
@@ -202,7 +207,12 @@ const WorkDetail = ({
                         });
                       }}
                       value={work?.assignedTo || ""}
-                      disabled={isCustomer || isEmployee || work.status == WorkStatus.Done || work.status == WorkStatus.Reject}
+                      disabled={
+                        isCustomer ||
+                        isEmployee ||
+                        work.status == WorkStatus.Done ||
+                        work.status == WorkStatus.Reject
+                      }
                     >
                       {/* Placeholder option */}
                       <option value="">-- Chọn nhân viên --</option>
@@ -228,9 +238,13 @@ const WorkDetail = ({
                       }}
                       type="number"
                       value={work?.price || 0}
-                      disabled={isCustomer || isEmployee || work.status == WorkStatus.Done || work.status == WorkStatus.Reject}
-                    >
-                    </Input>
+                      disabled={
+                        isCustomer ||
+                        isEmployee ||
+                        work.status == WorkStatus.Done ||
+                        work.status == WorkStatus.Reject
+                      }
+                    ></Input>
                   </div>
                 )}
                 {renderTableRow(
@@ -241,7 +255,11 @@ const WorkDetail = ({
                         setStatus(e.target.value);
                       }}
                       value={status}
-                      disabled={isCustomer || work.status == WorkStatus.Done || work.status == WorkStatus.Reject}
+                      disabled={
+                        isCustomer ||
+                        work.status == WorkStatus.Done ||
+                        work.status == WorkStatus.Reject
+                      }
                     >
                       {optionWork.map((i: any) => (
                         <option key={i.value} value={i.value}>
@@ -251,82 +269,109 @@ const WorkDetail = ({
                     </Select>
                   </div>
                 )}
+                {renderTableRow(
+                  "Địa chỉ",
+                  <TextArea
+                    className="outline-none rounded border border-gray-400 leading-normal resize-none w-full h-16 py-2 px-3 font-medium placeholder-gray-700"
+                    name="body"
+                    required
+                    value={work?.address}
+                    onChange={(e: any) => {
+                      setWork({ ...work, address: e.target.value });
+                    }}
+                    disabled={
+                      work.status == WorkStatus.Done ||
+                      work.status == WorkStatus.Reject
+                    }
+                  ></TextArea>
+                )}
               </tbody>
             </table>
 
-            {!(work.status == WorkStatus.Done || work.status == WorkStatus.Reject) && !isCustomer && (
-              <div className="flex flex-col ">
-                <div className="rounded-full w-[160px] h-[100px]">
-                  <label
-                    htmlFor="input-file"
-                    className="py-1 rounded-full flex items-center justify-center cursor-pointer bg-black text-[white]"
-                  >
-                    <svg
-                      width="30"
-                      height="30"
-                      viewBox="0 0 30 30"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
+            {!(
+              work.status == WorkStatus.Done || work.status == WorkStatus.Reject
+            ) &&
+              !isCustomer && (
+                <div className="flex flex-col ">
+                  <div className="rounded-full w-[160px] h-[100px]">
+                    <label
+                      htmlFor="input-file"
+                      className="py-1 rounded-full flex items-center justify-center cursor-pointer bg-black text-[white]"
                     >
-                      <path
-                        d="M17.5 5H7.5C6.83696 5 6.20107 5.26339 5.73223 5.73223C5.26339 6.20107 5 6.83696 5 7.5V20M5 20V22.5C5 23.163 5.26339 23.7989 5.73223 24.2678C6.20107 24.7366 6.83696 25 7.5 25H22.5C23.163 25 23.7989 24.7366 24.2678 24.2678C24.7366 23.7989 25 23.163 25 22.5V17.5M5 20L10.7325 14.2675C11.2013 13.7988 11.8371 13.5355 12.5 13.5355C13.1629 13.5355 13.7987 13.7988 14.2675 14.2675L17.5 17.5M25 12.5V17.5M25 17.5L23.0175 15.5175C22.5487 15.0488 21.9129 14.7855 21.25 14.7855C20.5871 14.7855 19.9513 15.0488 19.4825 15.5175L17.5 17.5M17.5 17.5L20 20M22.5 5H27.5M25 2.5V7.5M17.5 10H17.5125"
-                        stroke="currentColor"
-                        strokeWidth={1.5}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        fill="#000"
-                      />
-                    </svg>
+                      <svg
+                        width="30"
+                        height="30"
+                        viewBox="0 0 30 30"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M17.5 5H7.5C6.83696 5 6.20107 5.26339 5.73223 5.73223C5.26339 6.20107 5 6.83696 5 7.5V20M5 20V22.5C5 23.163 5.26339 23.7989 5.73223 24.2678C6.20107 24.7366 6.83696 25 7.5 25H22.5C23.163 25 23.7989 24.7366 24.2678 24.2678C24.7366 23.7989 25 23.163 25 22.5V17.5M5 20L10.7325 14.2675C11.2013 13.7988 11.8371 13.5355 12.5 13.5355C13.1629 13.5355 13.7987 13.7988 14.2675 14.2675L17.5 17.5M25 12.5V17.5M25 17.5L23.0175 15.5175C22.5487 15.0488 21.9129 14.7855 21.25 14.7855C20.5871 14.7855 19.9513 15.0488 19.4825 15.5175L17.5 17.5M17.5 17.5L20 20M22.5 5H27.5M25 2.5V7.5M17.5 10H17.5125"
+                          stroke="currentColor"
+                          strokeWidth={1.5}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="#000"
+                        />
+                      </svg>
 
-                    <span className="mt-1 text-xs inline-block ml-2 ">
-                      Thêm ảnh
-                    </span>
-                  </label>
-                  <input
-                    onChange={handleChangeFile}
-                    type="file"
-                    className="opacity-0 cursor-pointer"
-                    multiple
-                    id="input-file"
-                  />
-                </div>
-                <div className="mt-1 flex  flex-wrap gap-4 relative ">
-                  {listImage?.map((src: any, index: any) => (
-                    <div
-                      key={index}
-                      style={{
-                        width: "calc(50% - 40px)",
-                      }}
-                      className="relative flex items-center justify-between border border-gray-300 p-2 rounded "
-                    >
-                      <img
-                        src={src}
-                        className="w-14 h-14 object-cover rounded"
-                        alt="Product"
-                      />
-                      <div className="flex-1 ml-4">
-                        <p className="text-sm">Image {index + 1}</p>
-                        <p className="text-xs text-gray-500">
-                          {(src.size || 100 + Math.random() * 1000).toFixed(2)}{" "}
-                          KB
-                        </p>
+                      <span className="mt-1 text-xs inline-block ml-2 ">
+                        Thêm ảnh
+                      </span>
+                    </label>
+                    <input
+                      onChange={handleChangeFile}
+                      type="file"
+                      className="opacity-0 cursor-pointer"
+                      multiple
+                      id="input-file"
+                    />
+                  </div>
+                  <div className="mt-1 flex  flex-wrap gap-4 relative ">
+                    {listImage?.map((src: any, index: any) => (
+                      <div
+                        key={index}
+                        style={{
+                          width: "calc(50% - 40px)",
+                        }}
+                        className="relative flex items-center justify-between border border-gray-300 p-2 rounded "
+                      >
+                        <img
+                          src={src}
+                          className="w-14 h-14 object-cover rounded"
+                          alt="Product"
+                        />
+                        <div className="flex-1 ml-4">
+                          <p className="text-sm">Image {index + 1}</p>
+                          <p className="text-xs text-gray-500">
+                            {(src.size || 100 + Math.random() * 1000).toFixed(
+                              2
+                            )}{" "}
+                            KB
+                          </p>
+                        </div>
+                        <Image
+                          className="cursor-pointer"
+                          onClick={() => handleDeleteImage(index)}
+                          src="/delete1.svg"
+                          alt=""
+                          width={20}
+                          height={20}
+                        />
                       </div>
-                      <Image
-                        className="cursor-pointer"
-                        onClick={() => handleDeleteImage(index)}
-                        src="/delete1.svg"
-                        alt=""
-                        width={20}
-                        height={20}
-                      />
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {!isCustomer &&
-              (status == 2 || !(work.status == WorkStatus.Done || work.status == WorkStatus.Reject)) && (
+              (isOwner ||
+                (isEmployee && work.assignedTo == userStore?.user.id)) &&
+              (status == 2 ||
+                !(
+                  work.status == WorkStatus.Done ||
+                  work.status == WorkStatus.Reject
+                )) && (
                 <div className="mt-5 w-full flex justify-end">
                   <ButtonPrimary onClick={updateData}>Lưu</ButtonPrimary>
                 </div>

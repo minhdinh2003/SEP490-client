@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import http from "@/http/http";
 import ButtonPrimary from "@/shared/Button/ButtonPrimary";
 import Input from "@/shared/Input/Input";
-import Select from "@/shared/Select/Select"; // Giả sử bạn có một component Select
+import Select from "react-select";
 import { handleErrorHttp } from "@/utils/handleError";
 import toast from "react-hot-toast";
 import { IPagingParam } from "@/contains/paging";
@@ -15,7 +15,6 @@ import NcModal from "@/shared/NcModal/NcModal";
 import AddCustomer from "../owner-request/AddCustomer";
 import RequestService from "@/http/requestService";
 
-
 const OwnerCreateJob = ({ editItem, callback = () => {}, idRequest }: any) => {
   const initialData = {
     requestId: 0,
@@ -25,7 +24,7 @@ const OwnerCreateJob = ({ editItem, callback = () => {}, idRequest }: any) => {
     status: "PENDING",
     deadline: "",
     price: 0,
-    userId: -1
+    userId: -1,
   };
   const [formData, setFormData] = useState<any>(initialData);
   const [errors, setErrors] = useState<any>({});
@@ -102,7 +101,8 @@ const OwnerCreateJob = ({ editItem, callback = () => {}, idRequest }: any) => {
     const value = e.target.value;
     setFormData({ ...formData, [key]: value });
   };
-
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [openAdd, setOpenAddCustomer] = useState(false);
   const getCustomers = async () => {
     try {
       const param: IPagingParam = {
@@ -131,10 +131,19 @@ const OwnerCreateJob = ({ editItem, callback = () => {}, idRequest }: any) => {
   useEffect(() => {
     getCustomers();
   }, []);
+  // Format dữ liệu cho react-select
+  const customerOptions = customers.map((customer) => ({
+    value: customer.id,
+    label: customer.fullName,
+  }));
 
+  // Xử lý khi chọn khách hàng
+  const handleCustomerChange = (selectedOption: any) => {
+    setSelectedCustomer(selectedOption);
+    setFormData({ ...formData, userId: selectedOption?.value });
+  };
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [openAdd, setOpenAddCustomer] = useState(false);
+
   return (
     <div className="nc-CartPage">
       <main className="">
@@ -161,16 +170,13 @@ const OwnerCreateJob = ({ editItem, callback = () => {}, idRequest }: any) => {
               </span>
               <div className="flex mt-2">
                 <Select
-                  onChange={changeData("userId")}
-                  value={selectedCustomer}
-                >
-                  <option value="">-- Chọn khách hàng --</option>
-                  {customers.map((employee: any) => (
-                    <option key={employee.id} value={employee.id}>
-                      {employee.fullName}
-                    </option>
-                  ))}
-                </Select>
+                  options={customerOptions} // Danh sách khách hàng
+                  value={selectedCustomer} // Giá trị đã chọn
+                  onChange={handleCustomerChange} // Xử lý khi chọn
+                  placeholder="-- Chọn khách hàng --"
+                  isSearchable // Cho phép tìm kiếm
+                  className="w-full"
+                />
                 <button
                   onClick={(e) => {
                     e.preventDefault();

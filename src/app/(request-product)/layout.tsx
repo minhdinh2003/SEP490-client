@@ -52,6 +52,11 @@ const pages: {
     name: "Tạo bill sửa chữa",
     link: "/employee-request",
     role: ["EMPLOYEE"]
+  },
+  {
+    name: "Danh sách yêu cầu",
+    link: "/request-list-employee",
+    role: ["EMPLOYEE"]
   }
 ];
 

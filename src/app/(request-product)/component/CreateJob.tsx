@@ -1,9 +1,5 @@
-// pages/index.tsx
-
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import Link from "next/link";
 import http from "@/http/http";
 import ButtonPrimary from "@/shared/Button/ButtonPrimary";
 import Input from "@/shared/Input/Input";
@@ -23,11 +19,25 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
     description: "",
     status: "PENDING",
     deadline: "",
-    price: 0
+    price: 0,
+    address: ""
   };
   const [employees, setEmployees] = useState([]);
   const [formData, setFormData] = useState<any>(initialData);
   const [errors, setErrors] = useState<any>({});
+  const [showCustomTitleInput, setShowCustomTitleInput] = useState(false); // Trạng thái hiển thị input
+
+  // Danh sách công việc mẫu
+  const predefinedTitles = [
+    { value: "Kiểm tra xe (Tại nhà)", label: "Kiểm tra xe (Tại nhà)" },
+    { value: "Kiểm tra xe (Gara)", label: "Kiểm tra xe (Gara)" },
+    { value: "Báo giá sửa chữa", label: "Báo giá sửa chữa" },
+    { value: "Tiến hành sửa chữa", label: "Tiến hành sửa chữa" },
+    { value: "Kiểm tra sau sửa chữa", label: "Kiểm tra sau sửa chữa" },
+    { value: "hanh toán chi phí", label: "Thanh toán chi phí" },
+    { value: "Giao xe cho khách hàng", label: "Giao xe cho khách hàng" },
+    { value: "Khác", label: "Khác" }, // Tùy chọn "Khác"
+  ];
 
   useEffect(() => {
     if (editItem) {
@@ -98,6 +108,17 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
     const value = e.target.value;
     setFormData({ ...formData, [key]: value });
   };
+
+  const handleTitleChange = (selectedValue: string) => {
+    if (selectedValue === "Khác") {
+      setShowCustomTitleInput(true); // Hiển thị input nếu chọn "Khác"
+      setFormData({ ...formData, title: "" }); // Xóa giá trị title hiện tại
+    } else {
+      setShowCustomTitleInput(false); // Ẩn input nếu chọn giá trị khác
+      setFormData({ ...formData, title: selectedValue }); // Cập nhật title từ combo box
+    }
+  };
+
   const getListEmployee = async () => {
     try {
       const param: IPagingParam = {
@@ -126,35 +147,49 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
   useEffect(() => {
     getListEmployee();
   }, []);
+
   return (
     <div className="nc-CartPage">
       <main className="">
         <div className="grid grid-cols-1 w-[500px]">
           <form className="grid grid-cols-1 gap-4">
+            {/* Tiêu đề */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Tiêu đề
               </span>
-              <Input
-                value={formData.Title}
-                onChange={changeData("title")}
-                placeholder="Tiêu đề"
+              <Select
+                value={formData.title}
+                onChange={(e) => handleTitleChange(e.target.value)}
                 className="mt-1"
-                name="title"
-              />
+              >
+                <option value="">-- Chọn công việc --</option>
+                {predefinedTitles.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+              {showCustomTitleInput && (
+                <Input
+                  value={formData.title}
+                  onChange={changeData("title")}
+                  placeholder="Nhập tiêu đề khác"
+                  className="mt-2"
+                />
+              )}
               {errors.title && (
                 <span className="text-red-500">{errors.title}</span>
               )}
             </label>
+
+            {/* Nhân viên */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Nhân viên
               </span>
               <Select onChange={changeData("assignedTo")}>
-                {/* Placeholder option */}
                 <option value="">-- Chọn nhân viên --</option>
-
-                {/* List of employees */}
                 {employees.map((employee: any) => (
                   <option key={employee.id} value={employee.id}>
                     {employee.fullName}
@@ -165,6 +200,8 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
                 <span className="text-red-500">{errors.assignedTo}</span>
               )}
             </label>
+
+            {/* Chi phí */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Chi phí phát sinh nếu có
@@ -173,13 +210,15 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
                 value={formData.price}
                 onChange={changeData("price")}
                 className="mt-1"
-                name="Title"
+                name="price"
                 type="number"
               />
               {errors.price && (
                 <span className="text-red-500">{errors.price}</span>
               )}
             </label>
+
+            {/* Hạn hoàn thành */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Hạn hoàn thành
@@ -188,13 +227,29 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
                 value={formData.deadline}
                 onChange={changeData("deadline")}
                 className="mt-1"
-                name="Title"
+                name="deadline"
                 type="date"
               />
               {errors.deadline && (
                 <span className="text-red-500">{errors.deadline}</span>
               )}
             </label>
+            <label className="block">
+              <span className="text-neutral-800 dark:text-neutral-200">
+                Địa chỉ
+              </span>
+              <Input
+                value={formData.address}
+                onChange={changeData("address")}
+                placeholder="Nhập địa chỉ"
+                className="mt-1"
+                name="address"
+              />
+              {errors.address && (
+                <span className="text-red-500">{errors.address}</span>
+              )}
+            </label>
+            {/* Mô tả */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Mô tả
@@ -211,6 +266,7 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
               )}
             </label>
 
+            {/* Nút lưu */}
             <ButtonPrimary onClick={(e) => handleSaveData(e)} type="submit">
               {!editItem ? "Tạo công việc" : "Sửa yêu cầu"}
             </ButtonPrimary>
