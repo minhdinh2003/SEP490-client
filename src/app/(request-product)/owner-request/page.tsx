@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import useAuthStore from "@/store/useAuthStore";
 import UploadService from "@/http/uploadService";
-import Select from "@/shared/Select/Select";
+import Select from "react-select";
 import UserService from "@/http/userService";
 import { ServiceResponse } from "@/type/service.response";
 import { IPagingParam } from "@/contains/paging";
@@ -101,7 +101,7 @@ const CreateWoodenBookRequest = ({ editItem, callback = () => {} }: any) => {
       images: listImage,
       reasonReject: "",
       isUserConfirm: true,
-      userId: parseInt(formData.userId)
+      userId: parseInt(formData.userId),
     };
 
     try {
@@ -110,7 +110,7 @@ const CreateWoodenBookRequest = ({ editItem, callback = () => {} }: any) => {
         toast.success("Tạo yêu cầu thành công");
         setListImage([]);
         setFormData(initialData);
-        setSelectedCustomer(null)
+        setSelectedCustomer(null);
       } else {
         await http.put("productRequest", body);
         toast.success("Đã sửa");
@@ -157,6 +157,17 @@ const CreateWoodenBookRequest = ({ editItem, callback = () => {} }: any) => {
   useEffect(() => {
     getCustomers();
   }, []);
+  // Format dữ liệu cho react-select
+  const customerOptions = customers.map((customer) => ({
+    value: customer.id,
+    label: customer.fullName,
+  }));
+
+  // Xử lý khi chọn khách hàng
+  const handleCustomerChange = (selectedOption: any) => {
+    setSelectedCustomer(selectedOption);
+    setFormData({ ...formData, userId: selectedOption?.value });
+  };
 
   return (
     <div className="nc-CartPage ">
@@ -198,16 +209,13 @@ const CreateWoodenBookRequest = ({ editItem, callback = () => {} }: any) => {
               </span>
               <div className="flex mt-2">
                 <Select
-                  onChange={changeData("userId")}
-                  value={selectedCustomer}
-                >
-                  <option value="">-- Chọn khách hàng --</option>
-                  {customers.map((employee: any) => (
-                    <option key={employee.id} value={employee.id}>
-                      {employee.fullName}
-                    </option>
-                  ))}
-                </Select>
+                  options={customerOptions} // Danh sách khách hàng
+                  value={selectedCustomer} // Giá trị đã chọn
+                  onChange={handleCustomerChange} // Xử lý khi chọn
+                  placeholder="-- Chọn khách hàng --"
+                  isSearchable // Cho phép tìm kiếm
+                  className="w-full"
+                />
                 <button
                   onClick={(e) => {
                     e.preventDefault();
@@ -328,10 +336,14 @@ const CreateWoodenBookRequest = ({ editItem, callback = () => {} }: any) => {
           setOpenAddCustomer(false);
           // setIdImage(null);
         }}
-        renderContent={() => <AddCustomer callback={() => {
-          setOpenAddCustomer(false);
-          getCustomers();
-        }} />}
+        renderContent={() => (
+          <AddCustomer
+            callback={() => {
+              setOpenAddCustomer(false);
+              getCustomers();
+            }}
+          />
+        )}
         modalTitle="Thêm người dùng"
       />
     </div>

@@ -23,6 +23,7 @@ import { IPagingParam } from "@/contains/paging";
 import RequestService from "@/http/requestService";
 import { ServiceResponse } from "@/type/service.response";
 import useCheckoutStore from "@/store/useCheckoutStorage";
+import Input from "@/shared/Input/Input";
 
 const Myrequest = ({ idRequest, callback = () => {} }: any) => {
   const messStore: any = useMessageStore();
@@ -55,11 +56,12 @@ const Myrequest = ({ idRequest, callback = () => {} }: any) => {
   // image
   const [openImage, setOpenImage] = useState(false);
   const [idImage, setIdImage] = useState(null);
-
+  const [totalPages, setTotalPages] = useState(1);
   const userStore: any = useAuthStore();
   //   const { data: listRequest } = useGetData("Policy/owner", [reget]);
   const [listRequest, setListRequest] = useState<any>([]);
-
+  const [currentPage, setCurrentPage] = useState(1); // State phân trang
+  const [searchKeyword, setSearchKeyword] = useState(""); // State tìm kiếm
   // const handleDelete = async (id: any) => {
   //   try {
   //     const res = await http.delete("ProductRequest/request?id=" + id);
@@ -73,38 +75,45 @@ const Myrequest = ({ idRequest, callback = () => {} }: any) => {
   // };
 
   //
-  const getListRequest = async () => {
+  const getListRequest = async (page: number = 1) => {
     try {
       const param: IPagingParam = {
-        pageSize: 1000,
-        pageNumber: 1,
+        pageSize: 5,
+        pageNumber: page,
         conditions: [
           {
-            key: "userId",
-            condition: "equal",
-            value: userStore.user.id,
-          },
-          {
-            key: "type",
-            condition: "different",
-            value: "EMPLOYEE_TASK"
+            key: "any",
+            condition: "raw",
+            value: {
+              userId: userStore.user.id,
+              type: {
+                not: "EMPLOYEE_TASK",
+              },
+              description: {
+                contains: searchKeyword,
+              }
+            },
           }
         ],
         searchKey: "",
         searchFields: [],
         includeReferences: {
           user: true,
-          TaskDetail: true
+          TaskDetail: true,
         },
         sortOrder: "updatedAt desc",
       };
       const res = await RequestService.getPaging<ServiceResponse>(param);
       setListRequest(res.data.data);
+      
+      setTotalPages(Math.floor(res.data?.totalCount / 5) + 1);
+      
+      console.log(totalPages);
     } catch (error: any) {}
   };
   useEffect(() => {
     getListRequest();
-  }, []);
+  }, [searchKeyword]);
 
   const reversedList = (listRequest as any)?.slice();
 
@@ -171,7 +180,7 @@ const Myrequest = ({ idRequest, callback = () => {} }: any) => {
       0
     );
     return priceArisen;
-  }
+  };
   const renderListTable = () =>
     finalList?.map((request: any, index: number) => (
       <tr
@@ -347,6 +356,26 @@ const Myrequest = ({ idRequest, callback = () => {} }: any) => {
         onClose={handleCloseModal}
         idRequest={idMess}
       />
+      <div className="flex justify-between items-center mb-4">
+        {/* Tìm kiếm */}
+        <div className="flex items-center w-[400px]">
+          <Input
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            placeholder="Tìm kiếm theo mô tả"
+            className="w-[600px]"
+          />
+          {/* <ButtonPrimary
+            onClick={() => {
+              setCurrentPage(1); // Reset về trang đầu tiên khi tìm kiếm
+              getListRequest(1, searchKeyword);
+            }}
+            className="px-5 py-2 ml-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors whitespace-nowrap"
+          >
+            Tìm kiếm
+          </ButtonPrimary> */}
+        </div>
+      </div>
       <main className="  ">
         {(listRequest as any)?.length > 0 ? (
           <div className="flex  bg-white">
@@ -412,6 +441,36 @@ const Myrequest = ({ idRequest, callback = () => {} }: any) => {
           </div>
         )}
       </main>
+      {/* Phân trang */}
+      <div className="flex items-center justify-center mt-6 space-x-4">
+        <button
+          onClick={() => {
+            if (currentPage > 1) {
+              setCurrentPage(currentPage - 1);
+              getListRequest(currentPage - 1);
+            }
+          }}
+          disabled={currentPage === 1}
+          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 transition-colors"
+        >
+          Trước
+        </button>
+
+        <span className="text-sm font-medium text-gray-700">
+          Trang {currentPage}/{totalPages}
+        </span>
+
+        <button
+          onClick={() => {
+            setCurrentPage(currentPage + 1);
+            getListRequest(currentPage + 1);
+          }}
+          disabled={currentPage >= totalPages}
+          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 transition-colors"
+        >
+          Sau
+        </button>
+      </div>
       <NcModal
         isOpenProp={openWork}
         onCloseModal={() => {

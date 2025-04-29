@@ -24,6 +24,7 @@ import UserService from "@/http/userService";
 import Button from "@/shared/Button/Button";
 import Select from "@/shared/Select/Select";
 import { handleErrorHttp } from "@/utils/handleError";
+import { title } from "process";
 
 const RequestList = () => {
   const [isDatcoc, setIsDatcoc] = useState(false);
@@ -55,26 +56,34 @@ const RequestList = () => {
   const getListRequest = async (page: number = 1) => {
     let values: any = {
       assignedTo: {
-        not: null, 
+        not: null,
       },
       assignee: {
         role: "EMPLOYEE",
-      }
+      },
+      title: {
+        contains: searchKey,
+      },
     };
     if (selectedUser) {
       values = {
-        assignedTo: parseInt(selectedUser)
-      }
+        assignedTo: parseInt(selectedUser),
+        title: {
+          contains: searchKey,
+        },
+      };
     }
     try {
       const param: IPagingParam = {
-        pageSize: 10,
+        pageSize: 5,
         pageNumber: page,
-        conditions: [{
-          key: "any",
-          condition: "raw",
-          value: values,
-        }],
+        conditions: [
+          {
+            key: "any",
+            condition: "raw",
+            value: values,
+          },
+        ],
         searchKey: "",
         searchFields: [],
         includeReferences: {
@@ -85,7 +94,7 @@ const RequestList = () => {
       const res = await TaskDetailService.getPaging<ServiceResponse>(param);
       setListRequest(res.data.data);
       setCurrentPage(page);
-      setTotalPages(Math.ceil(res.data.totalCount / 10));
+      setTotalPages(Math.ceil(res.data.totalCount / 5));
     } catch (error: any) {
       console.error("Error fetching data:", error);
     }
@@ -174,8 +183,8 @@ const RequestList = () => {
       <main className="w-full">
         <div className="flex items-center justify-between mb-4">
           {/* Input Search */}
-          <div className="flex items-center gap-2">
-            {/* <Input
+          <div className="flex items-center gap-2 w-[400px]">
+            <Input
               type="text"
               placeholder="Tìm kiếm theo tiêu đề"
               value={searchKey}
@@ -186,7 +195,7 @@ const RequestList = () => {
                   handleSearch();
                 }
               }}
-            /> */}
+            />
             {/* Combobox for User Selection */}
             <Select
               className="w-[200px]"
@@ -203,7 +212,6 @@ const RequestList = () => {
               ))}
             </Select>
           </div>
-
         </div>
 
         {listRequest.length > 0 ? (
