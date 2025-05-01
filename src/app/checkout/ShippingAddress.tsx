@@ -43,7 +43,9 @@ const ShippingAddress: FC<Props> = ({
     ward: user.ward
   });
   const getAddressString = () => {
-    return `${user?.province}, ${user?.district}, ${user.ward}, ${user.addressLine1}, ${user?.addressLine2}`
+    const addressParts = [user?.province, user?.district, user?.ward, user?.addressLine1];
+    const filteredAddress = addressParts.filter(part => part);
+    return filteredAddress.join(", ");
   };
   const [dataPostAddress, setDataPostAddress] = useState({
     AddressID: 0,

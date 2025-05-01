@@ -16,6 +16,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { formatPriceVND, getUrlImage } from "@/utils/helpers";
 import useAuthStore from "@/store/useAuthStore";
 import WithHydration from "@/HOC/withHydration";
+import { useEffect } from "react";
+import { IPagingParam } from "@/contains/paging";
+import voucherService from "@/http/voucherService";
+import { ServiceResponse } from "@/type/service.response";
 
 const CheckoutPage = () => {
   const userStore = useAuthStore() as any;
@@ -40,7 +44,37 @@ const CheckoutPage = () => {
 
   // Trạng thái cho mã voucher và tổng tiền sau khi giảm giá
   const [voucherCode, setVoucherCode] = useState<string>("");
+  const [vouchers, setVouchers] = useState<any[]>([]);
   const [discountedTotal, setDiscountedTotal] = useState<number | null>(null);
+  const [selectedVoucher, setSelectedVoucher] = useState<any>(null);
+
+  const fetchVouchers = async () => {
+    try {
+      const param: IPagingParam = {
+        pageSize: 1000,
+        pageNumber: 1,
+        conditions: [
+          {
+            key: "userId",
+            condition: "equal",
+            value: user?.id,
+          },
+        ],
+        searchKey: "",
+        searchFields: [],
+        includeReferences: {
+          promotion: true,
+        },
+        sortOrder: "updatedAt desc",
+      };
+      const res = await voucherService.getPaging<ServiceResponse>(param);
+      setVouchers(res.data?.data);
+    } catch (error) {}
+  };
+
+  useEffect(() => {
+    fetchVouchers();
+  }, []);
 
   const renderProduct = (item: any, index: any) => {
     const { Images: image, Price: price, ProductName: name, Quantity } = item;
@@ -151,10 +185,12 @@ const CheckoutPage = () => {
         setDiscountedTotal(discountedAmount);
         toast.success("Áp dụng mã voucher thành công");
       } else {
-        toast.error("Mã voucher không hợp lệ");
+        setDiscountedTotal(null);
+        toast.error(res.payload.devMessage);
       }
     } catch (error: any) {
       handleErrorHttp(error.payload);
+      setDiscountedTotal(null);
       toast.error("Có lỗi xảy ra khi áp dụng mã voucher");
     }
   };
@@ -238,7 +274,12 @@ const CheckoutPage = () => {
   const totalprice = listProductCheckout.reduce((total: number, item: any) => {
     return (total += 1 * item.Price);
   }, 0);
-
+  const truncateText = (text: string, maxLength: number): string => {
+    if (text.length > maxLength) {
+      return text.slice(0, maxLength) + "...";
+    }
+    return text;
+  };
   return (
     <div className="nc-CheckoutPage">
       <main className="container py-16 lg:pb-28 lg:pt-20 ">
@@ -271,20 +312,47 @@ const CheckoutPage = () => {
             </div>
 
             {!isFromRequest && (
+              // <div className="mt-6 flex items-center space-x-4">
+              //   <input
+              //     type="text"
+              //     value={voucherCode}
+              //     onChange={(e) => setVoucherCode(e.target.value)}
+              //     placeholder="Nhập mã voucher"
+              //     className="flex-1 px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              //   />
+              //   <button
+              //     onClick={applyVoucher}
+              //     className="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-500 transition-colors"
+              //   >
+              //     Áp dụng
+              //   </button>
+              // </div>
               <div className="mt-6 flex items-center space-x-4">
-                <input
-                  type="text"
-                  value={voucherCode}
-                  onChange={(e) => setVoucherCode(e.target.value)}
-                  placeholder="Nhập mã voucher"
+                <select
+                  value={voucherCode || ""}
+                  onChange={(e) => {
+                    const code = e.target.value;
+                    setVoucherCode(code || "");
+                    const voucher = vouchers.find((v) => v.code === code);
+                    setSelectedVoucher(voucher || null);
+                    applyVoucher();
+                  }}
                   className="flex-1 px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-                <button
-                  onClick={applyVoucher}
-                  className="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-500 transition-colors"
                 >
-                  Áp dụng
-                </button>
+                  <option value="">-- Chọn voucher --</option>
+                  {vouchers.map((voucher) => (
+                    <option key={voucher.id} value={voucher.code}>
+                      <span
+                        title={`${voucher.code} - ${voucher.promotion.name}`}
+                      >
+                        {`${voucher.code} - ${truncateText(
+                          voucher.promotion.name,
+                          30
+                        )}`}
+                      </span>
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
 
@@ -293,6 +361,14 @@ const CheckoutPage = () => {
                 <span>Tổng</span>
                 <span>{formatPriceVND(totalprice)}</span>
               </div>
+              {discountedTotal !== null && selectedVoucher && (
+                <div className="flex justify-between font-semibold text-green-600 text-base pt-2">
+                  <span>Voucher: {selectedVoucher.title}</span>
+                  <span>
+                    -{formatPriceVND(totalprice - (discountedTotal || 0))}
+                  </span>
+                </div>
+              )}
               {discountedTotal !== null && (
                 <div className="flex justify-between font-semibold text-green-600 text-base pt-2">
                   <span>Tổng sau khi giảm giá</span>
