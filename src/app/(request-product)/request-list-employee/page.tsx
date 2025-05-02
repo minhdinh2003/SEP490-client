@@ -30,7 +30,6 @@ import RequestService from "@/http/requestService";
 import { ServiceResponse } from "@/type/service.response";
 import { IPagingParam } from "@/contains/paging";
 
-
 const RequestList = () => {
   const [openPrice, setOpenPrice] = useState(false);
   const [openReject, setOpenReject] = useState(false);
@@ -100,6 +99,13 @@ const RequestList = () => {
                     },
                   ],
                 },
+                {
+                  TaskDetail: {
+                    some: {
+                      assignedTo: userStore?.user?.id, // Chỉ lấy các Request có TaskDetail được giao cho user có ID = A
+                    },
+                  },
+                }
               ],
             },
           },
@@ -228,40 +234,6 @@ const RequestList = () => {
         </td>
         <td className=" min-w-[300px] p-4 border-b border-blue-gray-50 flex ">
           <div className=" flex items-center gap-3">
-            {request.status == RequestStatus.PENDING && (
-              <div className="flex gap-3 ">
-                <ButtonIcon
-                  onClick={() => {
-                    setOpenPrice(true);
-                    setIdPrice(request?.id);
-                  }}
-                  svg={"/accept.svg"}
-                  tooltip="Xác nhận"
-                />
-                <ButtonIcon
-                  onClick={() => {
-                    setCurrentId(request.id);
-                    setOpenReject(true);
-                  }}
-                  svg={"/reject.svg"}
-                  tooltip="Từ chối"
-                />
-              </div>
-            )}
-            {request.status != RequestStatus.REJECTED &&
-              request.status != RequestStatus.COMPLETED &&
-              request.status != RequestStatus.CANCELLED && (
-                <div className="flex items-center gap-3">
-                  <ButtonIcon
-                    onClick={() => {
-                      setOpenModal(true);
-                      setCurrentId(request.id);
-                    }}
-                    svg={"/create.svg"}
-                    tooltip="Tạo công việc"
-                  />
-                </div>
-              )}
             {request.status != RequestStatus.CANCELLED &&
               request.status != RequestStatus.REJECTED && (
                 <ButtonIcon
@@ -274,7 +246,7 @@ const RequestList = () => {
                   tooltip="Xem  công việc"
                 />
               )}
-
+{/* 
             <ButtonIcon
               onClick={() => {
                 handleOpenModal();
@@ -283,7 +255,7 @@ const RequestList = () => {
               }}
               svg={"/mess.svg"}
               tooltip="Trao đổi"
-            />
+            /> */}
 
             <ButtonIcon
               onClick={() => {
@@ -324,15 +296,6 @@ const RequestList = () => {
             placeholder="Tìm kiếm theo tên hoặc số điện thoại"
             className="w-[600px]"
           />
-          {/* <ButtonPrimary
-            onClick={() => {
-              setCurrentPage(1); // Reset về trang đầu tiên khi tìm kiếm
-              getListRequest(1, searchKeyword);
-            }}
-            className="px-5 py-2 ml-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors whitespace-nowrap"
-          >
-            Tìm kiếm
-          </ButtonPrimary> */}
         </div>
       </div>
 
@@ -431,22 +394,7 @@ const RequestList = () => {
           Sau
         </button>
       </div>
-      <NcModal
-        isOpenProp={openModal}
-        onCloseModal={() => setOpenModal(false)}
-        customClass="abc"
-        renderContent={() => (
-          <CreateWork
-            callback={() => {
-              setOpenModal(false);
-              setCurrentId("");
-              getListRequest();
-            }}
-            idRequest={currentId}
-          />
-        )}
-        modalTitle="Tạo công việc"
-      />
+
       <NcModal
         isOpenProp={openWork}
         onCloseModal={() => {
@@ -470,57 +418,6 @@ const RequestList = () => {
       />
 
       <NcModal
-        isOpenProp={openPrice}
-        onCloseModal={() => {
-          setOpenPrice(false);
-        }}
-        customClass="abc"
-        renderContent={() => (
-          <div>
-            <div className="font-semibold mb-2">Giá thỏa thuận</div>
-            <div className="w-[400px]">
-              <Input
-                value={pricce}
-                onChange={(e) => setPrice(e.target.value)}
-                type="number"
-              />
-            </div>
-            <div className="mt-3 flex items-center justify-center">
-              <ButtonPrimary onClick={() => handleApprove()}>
-                Xác nhận
-              </ButtonPrimary>
-            </div>
-          </div>
-        )}
-        modalTitle="Nhập giá"
-      />
-      <NcModal
-        isOpenProp={openReject}
-        onCloseModal={() => {
-          setOpenReject(false);
-          setReasonReject("");
-        }}
-        customClass="abc"
-        renderContent={() => (
-          <div>
-            <div className="font-semibold mb-2">Nhập lý do từ chối</div>
-            <div className="w-[400px]">
-              <textarea
-                className="w-full p-2 mt-1 border border-gray-300 rounded"
-                value={reasonReject}
-                onChange={(e) => setReasonReject(e.target.value)}
-              />
-            </div>
-            <div className="mt-3 flex items-center justify-center">
-              <ButtonPrimary onClick={() => handleReject(currentId)}>
-                Xác nhận
-              </ButtonPrimary>
-            </div>
-          </div>
-        )}
-        modalTitle="Nhập lý do từ chối"
-      />
-      <NcModal
         isOpenProp={openImage}
         onCloseModal={() => {
           setOpenImage(false);
@@ -528,7 +425,7 @@ const RequestList = () => {
         }}
         renderContent={() => <ListImageRequest id={idImage} />}
         modalTitle="Hình ảnh minh họa"
-      /> 
+      />
     </div>
   );
 };

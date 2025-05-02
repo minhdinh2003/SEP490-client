@@ -23,6 +23,7 @@ import TaskDetailService from "@/http/taskDetailService";
 import WorkDetail from "../component/WorkDetail";
 import ButtonPrimary from "@/shared/Button/ButtonPrimary";
 import OwnerCreateJob from "../component/OwnerCreateJob";
+import Input from "@/shared/Input/Input";
 
 const RequestList = () => {
   const [isDatcoc, setIsDatcoc] = useState(false);
@@ -34,7 +35,9 @@ const RequestList = () => {
   const [currentId, setCurrentId] = useState("");
   const [openWorkDetail, setOpenWorkDetail] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [searchKey, setSearchKey] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
   const handleOpenModal = () => {
     setOpenModal(true);
   };
@@ -48,17 +51,27 @@ const RequestList = () => {
     messStore?.setIdRoom?.(null);
   };
 
-  const getListRequest = async () => {
+  const getListRequest = async (page: number = 1) => {
     try {
       const param: IPagingParam = {
-        pageSize: 1000,
-        pageNumber: 1,
+        pageSize: 5,
+        pageNumber: page,
         conditions: [
           {
             key: "assignedTo",
             condition: "equal",
             value: userStore.user.id,
           },
+          {
+            key: "any",
+            condition: "raw",
+            value: {
+              assignedTo: userStore.user.id,
+              title: {
+                contains: searchKey,
+              }
+            }
+          }
         ],
         searchKey: "",
         searchFields: [],
@@ -69,6 +82,8 @@ const RequestList = () => {
       };
       const res = await TaskDetailService.getPaging<ServiceResponse>(param);
       setListRequest(res.data.data);
+      setCurrentPage(page);
+      setTotalPages(Math.ceil(res.data.totalCount / 5));
     } catch (error: any) {}
   };
   useEffect(() => {
@@ -77,6 +92,9 @@ const RequestList = () => {
 
   const reset = () => {
     setOpenWorkDetail(false);
+  };
+  const handleSearch = async () => {
+    getListRequest(1); // Reset về trang đầu tiên khi tìm kiếm
   };
 
   const renderListTable = () =>
@@ -103,6 +121,13 @@ const RequestList = () => {
           <div className="flex items-center gap-3 min-w-[100px]">
             <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
               {dateFormat3(request?.createdAt)}
+            </p>
+          </div>
+        </td>
+        <td key={index} className="p-4 border-b border-blue-gray-50">
+          <div className="flex items-center gap-3 min-w-[200px]">
+            <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
+              {request?.address}
             </p>
           </div>
         </td>
@@ -153,7 +178,21 @@ const RequestList = () => {
         onClose={handleCloseModal}
         idRequest={idMess}
       />
-      <div className="flex justify-end items-center mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2 w-[400px]">
+          <Input
+            type="text"
+            placeholder="Tìm kiếm theo tiêu đề"
+            value={searchKey}
+            onChange={(e) => setSearchKey(e.target.value)}
+            className="w-[250px]"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSearch();
+              }
+            }}
+          />
+        </div>
         <ButtonPrimary
           onClick={() => {
             handleOpenModal();
@@ -187,6 +226,11 @@ const RequestList = () => {
                     </th>
                     <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
                       <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                        Địa chỉ
+                      </p>
+                    </th>
+                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
                         Mô tả
                       </p>
                     </th>
@@ -214,6 +258,25 @@ const RequestList = () => {
           </div>
         )}
       </main>
+      <div className="flex justify-center mt-4">
+        <button
+          disabled={currentPage === 1}
+          onClick={() => getListRequest(currentPage - 1)}
+          className="px-3 py-1 bg-gray-200 rounded-l disabled:bg-gray-100"
+        >
+          Trước
+        </button>
+        <span className="px-3 py-1 bg-gray-200">
+          {currentPage} / {totalPages}
+        </span>
+        <button
+          disabled={currentPage === totalPages}
+          onClick={() => getListRequest(currentPage + 1)}
+          className="px-3 py-1 bg-gray-200 rounded-r disabled:bg-gray-100"
+        >
+          Sau
+        </button>
+      </div>
       <NcModal
         isOpenProp={openModal}
         onCloseModal={() => setOpenModal(false)}
