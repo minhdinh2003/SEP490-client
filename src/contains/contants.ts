@@ -36,7 +36,7 @@ export const STATUS_PRODUCT:any = {
 
 export const PAYMENT_METHOD:any = {
   0:"Thanh toán PayOS",
-  1:"Thanh toán bằng coin",
+  1:"Thanh toán tại quầy",
   2:"Thanh toán bằng tiền mặt"
 }
 export const SHIPING_STATUS:any = {

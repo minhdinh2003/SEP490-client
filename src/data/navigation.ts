@@ -68,5 +68,11 @@ export const NAVIGATION_DEMO_2: NavItemType[] = [
     href: "/cart",
     name: "Yêu thích",
     role: ["USER", "ADMIN", "OWNER"]
+  },
+  {
+    id: ncNanoId(),
+    href: "/order-me",
+    name: "Quản lý đơn hàng",
+    role: ["ADMIN", "OWNER"]
   }
 ];

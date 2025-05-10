@@ -48,6 +48,7 @@ const ProductCard: FC<any> = ({
     year,
     address,
   } = data;
+  const isSoldOut = data?.inventory?.quantity === 0;
   const [variantActive, setVariantActive] = useState(0);
   const [showModalQuickView, setShowModalQuickView] = useState(false);
   const router = useRouter();
@@ -63,7 +64,7 @@ const ProductCard: FC<any> = ({
   const notifyAddTocart = async () => {
     try {
       await cartStore.addItemToCart({
-        productId: data.id
+        productId: data.id,
       });
       toast.custom(
         (t) => (
@@ -115,11 +116,8 @@ const ProductCard: FC<any> = ({
               <div>
                 <h3 className="text-base font-medium ">{name}</h3>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  <span>
-                    {/* {variants ? variants[variantActive].name : `Natural`} */}
-                  </span>
+                  <span></span>
                   <span className="mx-2 border-s border-slate-200 dark:border-slate-700 h-4"></span>
-                  {/* <span>{size || "XL"}</span> */}
                 </p>
               </div>
               <Prices price={price} className="mt-0.5" />
@@ -264,6 +262,16 @@ const ProductCard: FC<any> = ({
       <div
         className={`nc-ProductCard relative flex flex-col bg-transparent group relative transform overflow-hidden rounded-md bg-white shadow-md shadow-one transition-all duration-300 duration-300 hover:scale-105 hover:shadow-two hover:shadow-xl dark:bg-dark dark:hover:shadow-gray-dark ${className}`}
       >
+        {/* Sold Out Badge */}
+        {isSoldOut && (
+          <div
+            className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold z-10"
+            style={{ boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)" }}
+          >
+            Đã bán
+          </div>
+        )}
+
         <Link
           href={`/product-detail/${id}`}
           className="absolute inset-0"

@@ -6,10 +6,12 @@ const useCheckoutStore = create(
     (set) => ({
       listCheckout: [],
       productCheckout: [],
+      requestCheckout: [],
 
       setListCheckout: (items: any) => set({ listCheckout: items }),
       setProductCheckout: (items: any) => set({ productCheckout: items }),
-      clearListCheckout: () => set({ listCheckout: [], productCheckout: [] }),
+      setRequestCheckout:  (items: any) => set({ requestCheckout: items }),
+      clearListCheckout: () => set({ listCheckout: [], productCheckout: [], requestCheckout: [] }),
     }),
     {
       name: "checkout-storage", // Tên khóa trong localStorage

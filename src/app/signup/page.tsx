@@ -1,194 +1,180 @@
+"use client";
+import http from "@/http/http";
+import { Alert } from "@/shared/Alert/Alert";
+import ButtonPrimary from "@/shared/Button/ButtonPrimary";
+import Input from "@/shared/Input/Input";
+import Province from "@/shared/Province/Province";
+import Select from "@/shared/Select/Select";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import Cookies from "js-cookie";
+import useAuthStore from "@/store/useAuthStore";
 
-import { Metadata } from "next";
+export interface SignUpDataForm {
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+export type SignUpDataPost = Omit<SignUpDataForm, "ConfirmPassword">;
 
-export const metadata: Metadata = {
-  title: "Sign Up Page | Free Next.js Template for Startup and SaaS",
-  description: "This is Sign Up Page for Startup Nextjs Template",
-  // other metadata
+const validate = (data: any) => {
+  let errors: any = {};
+
+  // Email validation
+  if (!data.email) {
+    errors.email = "Email không được để trống";
+  } else if (!/\S+@\S+\.\S+/.test(data.email)) {
+    errors.email = "Email không hợp lệ";
+  }
+
+  // Password validation
+  if (!data.password) {
+    errors.password = "Mật khẩu không được để trống";
+  } else if (data.password.length < 6) {
+    errors.password = "Mật khẩu có ít nhất 6 kí tự";
+  }
+
+  // Confirm Password validation
+  if (!data.confirmPassword) {
+    errors.confirmPassword = "Xác nhận mật khẩu không được để trống";
+  } else if (data.confirmPassword !== data.password) {
+    errors.confirmPassword = "Mật khẩu không khớp";
+  }
+  return errors;
 };
 
-const SignupPage = () => {
+const PageSignUp = () => {
+  const { getInfoUser, isLogin } = useAuthStore() as any;
+
+  const [data, setData] = useState<SignUpDataForm>({
+    email: "",
+    password: "",
+    confirmPassword: ""
+  });
+
+  const [errors, setErrors] = useState<any>({});
+  const [txtErrServer, settxtErrServer] = useState("");
+  const router = useRouter();
+  const [province, setProvin] = useState({
+    province: "",
+    district: "",
+    ward: "",
+  });
+
+  const onChange = (
+    key: keyof SignUpDataForm,
+    value: SignUpDataForm[keyof SignUpDataForm]
+  ) => {
+    setData({ ...data, [key]: value });
+  };
+
+  const handleSigup = async () => {
+    const newErrors = validate({ ...data, ...province });
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    const body = {
+      email: data.email,
+      password: data.password
+    };
+
+    try {
+      const signUpres = await http.post<any>("auth/register", body);
+      const loginRes = await http.post<any>("auth/login", {
+        email: data.email,
+        password: data.password,
+      });
+      const payloadLogin = loginRes.payload;
+
+      localStorage.setItem("token", payloadLogin.data.token);
+      Cookies.set("token",  payloadLogin.data.token, { expires: 30, path: "/" }); 
+      localStorage.setItem("isLogin", "true");
+      await getInfoUser(null);
+      router.push("/");
+    } catch (error) {
+      settxtErrServer("Đăng ký thất bại");
+    }
+  };
+
   return (
-    <>
-      <section className="relative z-10 overflow-hidden pb-16 pt-36 md:pb-20 lg:pb-28 lg:pt-[180px]">
-        <div className="container">
-          <div className="-mx-4 flex flex-wrap">
-            <div className="w-full px-4">
-              <div className="shadow-three mx-auto max-w-[500px] rounded bg-white px-6 py-10 dark:bg-dark sm:p-[60px]">
-                <h3 className="mb-3 text-center text-2xl font-bold text-black dark:text-white sm:text-3xl">
-                  Tạo tài khoản
-                </h3>
-                <div className="mb-8 flex items-center justify-center">
-                  <span className="hidden h-[1px] w-full max-w-[60px] bg-body-color/50 sm:block"></span>
-                  <span className="hidden h-[1px] w-full max-w-[60px] bg-body-color/50 sm:block"></span>
-                </div>
-                <form>
-                  <div className="mb-8">
-                    <label
-                      htmlFor="name"
-                      className="mb-3 block text-sm text-dark dark:text-white"
-                    >
-                      {" "}
-                      Họ và tên{" "}
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      placeholder="Enter your full name"
-                      className="border-stroke dark:text-body-color-dark dark:shadow-two w-full rounded-sm border bg-[#f8f8f8] px-6 py-3 text-base text-body-color outline-none transition-all duration-300 focus:border-primary dark:border-transparent dark:bg-[#2C303B] dark:focus:border-primary dark:focus:shadow-none"
-                    />
-                  </div>
-                  <div className="mb-8">
-                    <label
-                      htmlFor="email"
-                      className="mb-3 block text-sm text-dark dark:text-white"
-                    >
-                      {" "}
-                      Email{" "}
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      placeholder="Enter your Email"
-                      className="border-stroke dark:text-body-color-dark dark:shadow-two w-full rounded-sm border bg-[#f8f8f8] px-6 py-3 text-base text-body-color outline-none transition-all duration-300 focus:border-primary dark:border-transparent dark:bg-[#2C303B] dark:focus:border-primary dark:focus:shadow-none"
-                    />
-                  </div>
-                  <div className="mb-8">
-                    <label
-                      htmlFor="password"
-                      className="mb-3 block text-sm text-dark dark:text-white"
-                    >
-                      {" "}
-                      Password{" "}
-                    </label>
-                    <input
-                      type="password"
-                      name="password"
-                      placeholder="Enter your Password"
-                      className="border-stroke dark:text-body-color-dark dark:shadow-two w-full rounded-sm border bg-[#f8f8f8] px-6 py-3 text-base text-body-color outline-none transition-all duration-300 focus:border-primary dark:border-transparent dark:bg-[#2C303B] dark:focus:border-primary dark:focus:shadow-none"
-                    />
-                  </div>
-                  <div className="mb-8 flex">
-                    <label
-                      htmlFor="checkboxLabel"
-                      className="flex cursor-pointer select-none text-sm font-medium text-body-color"
-                    >
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          id="checkboxLabel"
-                          className="sr-only"
-                        />
-                        <div className="box mr-4 mt-1 flex h-5 w-5 items-center justify-center rounded border border-body-color border-opacity-20 dark:border-white dark:border-opacity-10">
-                          <span className="opacity-0">
-                            <svg
-                              width="11"
-                              height="8"
-                              viewBox="0 0 11 8"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M10.0915 0.951972L10.0867 0.946075L10.0813 0.940568C9.90076 0.753564 9.61034 0.753146 9.42927 0.939309L4.16201 6.22962L1.58507 3.63469C1.40401 3.44841 1.11351 3.44879 0.932892 3.63584C0.755703 3.81933 0.755703 4.10875 0.932892 4.29224L0.932878 4.29225L0.934851 4.29424L3.58046 6.95832C3.73676 7.11955 3.94983 7.2 4.1473 7.2C4.36196 7.2 4.55963 7.11773 4.71406 6.9584L10.0468 1.60234C10.2436 1.4199 10.2421 1.1339 10.0915 0.951972ZM4.2327 6.30081L4.2317 6.2998C4.23206 6.30015 4.23237 6.30049 4.23269 6.30082L4.2327 6.30081Z"
-                                fill="#3056D3"
-                                stroke="#3056D3"
-                                strokeWidth="0.4"
-                              />
-                            </svg>
-                          </span>
-                        </div>
-                      </div>
-                      <span>
-                        By creating account means you agree to the
-                        <a href="#0" className="text-primary hover:underline">
-                          {" "}
-                          Terms and Conditions{" "}
-                        </a>
-                        , and our
-                        <a href="#0" className="text-primary hover:underline">
-                          {" "}
-                          Privacy Policy{" "}
-                        </a>
-                      </span>
-                    </label>
-                  </div>
-                  <div className="mb-6">
-                    <button className="shadow-submit dark:shadow-submit-dark flex w-full items-center justify-center rounded-sm bg-primary px-9 py-4 text-base font-medium text-white duration-300 hover:bg-primary/90">
-                      Đăng ký
-                    </button>
-                  </div>
-                </form>
-                <p className="text-center text-base font-medium text-body-color">
-                  Đã có tài khoản?{" "}
-                  <Link href="/signin" className="text-primary hover:underline">
-                    Đăng nhập
-                  </Link>
-                </p>
-              </div>
+    <div className={`nc-PageSignUp `} data-nc-id="PageSignUp">
+      <div className=" mb-24 lg:mb-32">
+        <h2 className="my-4 mt-10 flex items-center text-3xl leading-[115%] md:text-5xl md:leading-[115%] font-semibold text-neutral-900 dark:text-neutral-100 justify-center">
+          Đăng ký
+        </h2>
+
+        <div className="max-w-xl mx-auto space-y-6">
+          {txtErrServer && <Alert type="error">{txtErrServer}</Alert>}
+          <form className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <label className="block col-span-1 md:col-span-2">
+              <span className="text-neutral-800 dark:text-neutral-200">
+                Email
+              </span>
+              <Input
+                type="email"
+                className="mt-1"
+                value={data.email}
+                onChange={(e) => onChange("email", e.target.value)}
+              />
+              {errors.email && (
+                <p className="text-red-500 text-sm">{errors.email}</p>
+              )}
+            </label>
+
+            <label className="block">
+              <span className="flex justify-between items-center text-neutral-800 dark:text-neutral-200">
+                Mật khẩu
+              </span>
+              <Input
+                value={data.password}
+                onChange={(e) => onChange("password", e.target.value)}
+                type="password"
+                className="mt-1"
+              />
+              {errors.password && (
+                <p className="text-red-500 text-sm">{errors.password}</p>
+              )}
+            </label>
+            <label className="block">
+              <span className="flex justify-between items-center text-neutral-800 dark:text-neutral-200">
+                Xác nhận mật khẩu
+              </span>
+              <Input
+                value={data.confirmPassword}
+                onChange={(e) => onChange("confirmPassword", e.target.value)}
+                type="password"
+                className="mt-1"
+              />
+              {errors.confirmPassword && (
+                <p className="text-red-500 text-sm">{errors.confirmPassword}</p>
+              )}
+            </label>
+
+
+            <div className="block col-span-1 md:col-span-2 justify-center flex">
+              <ButtonPrimary
+                onClick={(e: any) => {
+                  e.preventDefault();
+                  handleSigup();
+                }}
+              >
+                Đăng ký
+              </ButtonPrimary>
             </div>
-          </div>
+          </form>
+
+          <span className="block text-center text-neutral-700 dark:text-neutral-300">
+            Bạn đã có tài khoản? {` `}
+            <Link className="text-green-600" href="/login">
+              Đăng nhập
+            </Link>
+          </span>
         </div>
-        <div className="absolute left-0 top-0 z-[-1]">
-          <svg
-            width="1440"
-            height="969"
-            viewBox="0 0 1440 969"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <mask
-              id="mask0_95:1005"
-              style={{ maskType: "alpha" }}
-              maskUnits="userSpaceOnUse"
-              x="0"
-              y="0"
-              width="1440"
-              height="969"
-            >
-              <rect width="1440" height="969" fill="#090E34" />
-            </mask>
-            <g mask="url(#mask0_95:1005)">
-              <path
-                opacity="0.1"
-                d="M1086.96 297.978L632.959 554.978L935.625 535.926L1086.96 297.978Z"
-                fill="url(#paint0_linear_95:1005)"
-              />
-              <path
-                opacity="0.1"
-                d="M1324.5 755.5L1450 687V886.5L1324.5 967.5L-10 288L1324.5 755.5Z"
-                fill="url(#paint1_linear_95:1005)"
-              />
-            </g>
-            <defs>
-              <linearGradient
-                id="paint0_linear_95:1005"
-                x1="1178.4"
-                y1="151.853"
-                x2="780.959"
-                y2="453.581"
-                gradientUnits="userSpaceOnUse"
-              >
-                <stop stopColor="#4A6CF7" />
-                <stop offset="1" stopColor="#4A6CF7" stopOpacity="0" />
-              </linearGradient>
-              <linearGradient
-                id="paint1_linear_95:1005"
-                x1="160.5"
-                y1="220"
-                x2="1099.45"
-                y2="1192.04"
-                gradientUnits="userSpaceOnUse"
-              >
-                <stop stopColor="#4A6CF7" />
-                <stop offset="1" stopColor="#4A6CF7" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-      </section>
-    </>
+      </div>
+    </div>
   );
 };
 
-export default SignupPage;
+export default PageSignUp;
