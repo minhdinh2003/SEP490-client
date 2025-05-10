@@ -1,13 +1,9 @@
 "use client";
 
-import Label from "@/components/Label/Label";
 import NcInputNumber from "@/components/NcInputNumber";
 import Prices from "@/components/Prices";
-import { Product, PRODUCTS } from "@/data/data";
 import { useState } from "react";
 import ButtonPrimary from "@/shared/Button/ButtonPrimary";
-import Input from "@/shared/Input/Input";
-import ContactInfo from "./ContactInfo";
 import PaymentMethod from "./PaymentMethod";
 import ShippingAddress from "./ShippingAddress";
 import Image from "next/image";
@@ -16,17 +12,20 @@ import useCheckoutStore from "@/store/useCheckoutStorage";
 import toast from "react-hot-toast";
 import { handleErrorHttp } from "@/utils/handleError";
 import http from "@/http/http";
-import useCartStore from "@/store/useCartStore";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatPriceVND, getUrlImage } from "@/utils/helpers";
 import useAuthStore from "@/store/useAuthStore";
 import WithHydration from "@/HOC/withHydration";
+import { useEffect } from "react";
+import { IPagingParam } from "@/contains/paging";
+import voucherService from "@/http/voucherService";
+import { ServiceResponse } from "@/type/service.response";
 
 const CheckoutPage = () => {
   const userStore = useAuthStore() as any;
   const user: any = userStore?.user;
   const query = useSearchParams();
-  const isFromCart = query.get("fromCart") == "true";
+  const isFromRequest = query.get("fromRequest") == "true";
   const checkoutStore: any = useCheckoutStore();
   const router = useRouter();
   const [tabActive, setTabActive] = useState<
@@ -41,8 +40,42 @@ const CheckoutPage = () => {
   };
 
   const [AddressId, setAddressId] = useState(null);
-
   const [method, setMethod] = useState("0");
+
+  // Trạng thái cho mã voucher và tổng tiền sau khi giảm giá
+  const [voucherCode, setVoucherCode] = useState<string>("");
+  const [vouchers, setVouchers] = useState<any[]>([]);
+  const [discountedTotal, setDiscountedTotal] = useState<number | null>(null);
+  const [selectedVoucher, setSelectedVoucher] = useState<any>(null);
+
+  const fetchVouchers = async () => {
+    try {
+      const param: IPagingParam = {
+        pageSize: 1000,
+        pageNumber: 1,
+        conditions: [
+          {
+            key: "userId",
+            condition: "equal",
+            value: user?.id,
+          },
+        ],
+        searchKey: "",
+        searchFields: [],
+        includeReferences: {
+          promotion: true,
+        },
+        sortOrder: "updatedAt desc",
+      };
+      const res = await voucherService.getPaging<ServiceResponse>(param);
+      setVouchers(res.data?.data);
+    } catch (error) {}
+  };
+
+  useEffect(() => {
+    fetchVouchers();
+  }, []);
+
   const renderProduct = (item: any, index: any) => {
     const { Images: image, Price: price, ProductName: name, Quantity } = item;
     const imageFinal = getUrlImage(image);
@@ -81,13 +114,6 @@ const CheckoutPage = () => {
             <div className=" invisible hidden sm:block text-center relative">
               <NcInputNumber className="relative z-10" />
             </div>
-
-            {/* <a
-              href="##"
-              className="relative z-10 flex items-center mt-3 font-medium text-primary-6000 hover:text-primary-500 text-sm "
-            >
-              <span>Xóa</span>
-            </a> */}
           </div>
         </div>
       </div>
@@ -131,19 +157,58 @@ const CheckoutPage = () => {
     );
   };
 
+  const getAddressString = () => {
+    return `${user?.province}, ${user?.district}, ${user.ward}, ${user.addressLine1}, ${user?.addressLine2}`;
+  };
+
+  // Hàm xử lý áp dụng mã voucher
+  const applyVoucher = async () => {
+    if (!voucherCode.trim()) {
+      toast.error("Vui lòng nhập mã voucher");
+      return;
+    }
+    const listProductCheckout = isFromRequest
+      ? checkoutStore.requestCheckout
+      : checkoutStore.productCheckout;
+    var request = listProductCheckout[0];
+    try {
+      const body = {
+        voucherCode: voucherCode,
+        quantity: 1,
+        productId: parseInt(request.ProductID),
+      };
+
+      const res = await http.post("voucher/apply", body);
+
+      if (res.payload.success) {
+        const discountedAmount = res.payload.data.discountedPrice;
+        setDiscountedTotal(discountedAmount);
+        toast.success("Áp dụng mã voucher thành công");
+      } else {
+        setDiscountedTotal(null);
+        toast.error(res.payload.devMessage);
+      }
+    } catch (error: any) {
+      handleErrorHttp(error.payload);
+      setDiscountedTotal(null);
+      toast.error("Có lỗi xảy ra khi áp dụng mã voucher");
+    }
+  };
+
   // CHECK OUT FROM CART
   const checkoutFromCart = async () => {
     try {
+      var request = checkoutStore.requestCheckout[0];
       const body = {
-        AddressID: AddressId,
-        BankCode: "",
-        Lang: "vn",
-        CartItems: checkoutStore.listCheckout.map((i: any) => ({
-          CartItemID: i.CartItemID,
-        })),
-        PaymentMethod: Number(method),
+        requestId: Number(request.ProductID),
+        paymentMethod: Number(method),
+        fullName: user?.fullName,
+        address: getAddressString(),
+        phoneNumber: user?.phoneNumber,
+        voucherCode: voucherCode,
       };
-      const res = await http.post("Order/payInCart", body);
+
+      const res = await http.post("order/createOrderRepair", body);
       return res;
     } catch (error: any) {
       throw error;
@@ -161,7 +226,8 @@ const CheckoutPage = () => {
         })),
         fullName: user?.fullName,
         address: getAddressString(),
-        phoneNumber: user?.phoneNumber
+        phoneNumber: user?.phoneNumber,
+        voucherCode: voucherCode, // Thêm mã voucher vào body
       };
 
       const res = await http.post("order/createOrder", body);
@@ -170,19 +236,18 @@ const CheckoutPage = () => {
       throw error;
     }
   };
-  const getAddressString = () => {
-    return `${user?.province}, ${user?.district}, ${user.ward}, ${user.addressLine1}, ${user?.addressLine2}`
-  };
-  // CHECK OUT
+
   const handleCheckout = async () => {
     if (!getAddressString()) {
-      toast.error("vui lòng chọn địa chỉ giao hàng");
+      toast.error("Vui lòng chọn địa chỉ giao hàng");
       return;
     }
+
     try {
-      const res = isFromCart
+      const res = isFromRequest
         ? await checkoutFromCart()
         : await checkoutProductNow();
+
       if (res.payload.success) {
         checkoutStore.clearListCheckout();
         if (method === "0") {
@@ -194,8 +259,7 @@ const CheckoutPage = () => {
           router.push("/account-order");
           userStore.getInfoUser();
         }
-      }
-      else {
+      } else {
         toast.error(res.payload.devMessage);
       }
     } catch (error: any) {
@@ -203,14 +267,19 @@ const CheckoutPage = () => {
     }
   };
 
-  const listProductCheckout = isFromCart
-    ? checkoutStore.listCheckout
+  const listProductCheckout = isFromRequest
+    ? checkoutStore.requestCheckout
     : checkoutStore.productCheckout;
+
   const totalprice = listProductCheckout.reduce((total: number, item: any) => {
     return (total += 1 * item.Price);
   }, 0);
-  console.log(listProductCheckout);
-
+  const truncateText = (text: string, maxLength: number): string => {
+    if (text.length > maxLength) {
+      return text.slice(0, maxLength) + "...";
+    }
+    return text;
+  };
   return (
     <div className="nc-CheckoutPage">
       <main className="container py-16 lg:pb-28 lg:pt-20 ">
@@ -235,17 +304,79 @@ const CheckoutPage = () => {
           <div className="flex-shrink-0 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-700 my-10 lg:my-0 lg:mx-10 xl:lg:mx-14 2xl:mx-16 "></div>
 
           <div className="w-full lg:w-[36%] ">
-            <h3 className="text-lg font-semibold">Danh sách đơn hàng</h3>
+            <h3 className="text-lg font-semibold">
+              {isFromRequest ? "Sản phẩm sửa chữa" : "Danh sách đơn hàng"}
+            </h3>
             <div className="mt-8 divide-y divide-slate-200/70 dark:divide-slate-700 ">
               {listProductCheckout.map(renderProduct)}
             </div>
 
+            {!isFromRequest && (
+              // <div className="mt-6 flex items-center space-x-4">
+              //   <input
+              //     type="text"
+              //     value={voucherCode}
+              //     onChange={(e) => setVoucherCode(e.target.value)}
+              //     placeholder="Nhập mã voucher"
+              //     className="flex-1 px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              //   />
+              //   <button
+              //     onClick={applyVoucher}
+              //     className="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-500 transition-colors"
+              //   >
+              //     Áp dụng
+              //   </button>
+              // </div>
+              <div className="mt-6 flex items-center space-x-4">
+                <select
+                  value={voucherCode || ""}
+                  onChange={(e) => {
+                    const code = e.target.value;
+                    setVoucherCode(code || "");
+                    const voucher = vouchers.find((v) => v.code === code);
+                    setSelectedVoucher(voucher || null);
+                    applyVoucher();
+                  }}
+                  className="flex-1 px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="">-- Chọn voucher --</option>
+                  {vouchers.map((voucher) => (
+                    <option key={voucher.id} value={voucher.code}>
+                      <span
+                        title={`${voucher.code} - ${voucher.promotion.name}`}
+                      >
+                        {`${voucher.code} - ${truncateText(
+                          voucher.promotion.name,
+                          30
+                        )}`}
+                      </span>
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="mt-10 pt-6 text-sm text-slate-500 dark:text-slate-400 border-t border-slate-200/70 dark:border-slate-700 ">
               <div className="flex justify-between font-semibold text-slate-900 dark:text-slate-200 text-base pt-4">
                 <span>Tổng</span>
-                <span>{formatPriceVND(totalprice)} </span>
+                <span>{formatPriceVND(totalprice)}</span>
               </div>
+              {discountedTotal !== null && selectedVoucher && (
+                <div className="flex justify-between font-semibold text-green-600 text-base pt-2">
+                  <span>Voucher: {selectedVoucher.title}</span>
+                  <span>
+                    -{formatPriceVND(totalprice - (discountedTotal || 0))}
+                  </span>
+                </div>
+              )}
+              {discountedTotal !== null && (
+                <div className="flex justify-between font-semibold text-green-600 text-base pt-2">
+                  <span>Tổng sau khi giảm giá</span>
+                  <span>{formatPriceVND(discountedTotal)}</span>
+                </div>
+              )}
             </div>
+
             <ButtonPrimary
               onClick={() => handleCheckout()}
               className="mt-8 w-full"

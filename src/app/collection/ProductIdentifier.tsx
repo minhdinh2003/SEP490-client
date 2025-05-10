@@ -17,6 +17,8 @@ const ProductIdentifier = (context: any) => {
   const search = searchParams.get("search");
   const brand = searchParams.get("brand");
   const [text, setText] = useState(search || "");
+  const [currentPage, setCurrentPage] = useState(1); // Trang hiện tại
+  const [totalPages, setTotalPages] = useState(1); // Tổng số trang
   const [filter, setFilter] = useState({
     IsApproved: true,
     search,
@@ -24,46 +26,70 @@ const ProductIdentifier = (context: any) => {
     maxPrice: "",
     minPrice: "",
     categories: brand ? [parseInt(brand)] : [],
-    materials: [],
+    partTypes: [],
   });
   const [data, setData] = useState([]);
-  const getParamPaging = (): IPagingParam => {
+
+  const getParamPaging = (pageNumber: number): IPagingParam => {
     const param: IPagingParam = {
-      pageSize: 10000,
-      pageNumber: 1,
-      conditions: [
-        {
-          key: "category",
-          condition: "equal",
-          value: "PART",
-        },
-      ],
-      searchKey: text,
+      pageSize: 10,
+      pageNumber: pageNumber,
+      conditions: [],
+      searchKey: text || "",
       searchFields: ["name"],
       includeReferences: {
         inventory: true,
       },
+      sortOrder: filter.sort || "",
     };
+    var andConditions: any = [
+      {
+        category: "PART", // Điều kiện mặc định cho category
+      },
+    ];
+    // Nếu có danh sách categories, thêm điều kiện lọc brands
     if (filter.categories && filter.categories.length > 0) {
+      andConditions.push({
+        brands: {
+          some: {
+            id: {
+              in: filter.categories?.map((x: any) => x.value), // Lọc theo danh sách categories
+            },
+          },
+        },
+      });
+    }
+
+    // Chỉ thêm điều kiện price nếu cả minPrice và maxPrice đều tồn tại
+    if (
+      filter.minPrice !== undefined &&
+      filter.maxPrice !== undefined &&
+      typeof filter.minPrice === "number" &&
+      typeof filter.maxPrice === "number" &&
+      !isNaN(filter.minPrice) &&
+      !isNaN(filter.maxPrice)
+    ) {
+      andConditions.push({
+        price: {
+          gte: filter.minPrice, // Giá lớn hơn hoặc bằng minPrice
+          lte: filter.maxPrice, // Giá nhỏ hơn hoặc bằng maxPrice
+        },
+      });
+    }
+    if (filter.partTypes && filter.partTypes.length > 0) {
+      andConditions.push({
+        partType: {
+          in: filter.partTypes?.map((x: any) => x.value), // Lọc theo danh sách categories
+        },
+      });
+    }
+    if (andConditions.length > 0) {
       param.conditions = [
         {
           key: "any",
           condition: "raw",
           value: {
-            AND: [
-              {
-                category: "PART",
-              },
-              {
-                brands: {
-                  some: {
-                    id: {
-                      in: filter.categories,
-                    },
-                  },
-                },
-              },
-            ],
+            AND: andConditions,
           },
         },
       ];
@@ -71,10 +97,10 @@ const ProductIdentifier = (context: any) => {
 
     return param;
   };
-  const getData = async (init = false, txt = "") => {
+  const getData = async (pageNumber: number = 1) => {
     try {
       const res = await ProductService.getPaging<ServiceResponse>(
-        getParamPaging()
+        getParamPaging(pageNumber)
       );
       let currentData = res.data?.data;
       setData(currentData);
@@ -83,12 +109,12 @@ const ProductIdentifier = (context: any) => {
     }
   };
   useEffect(() => {
-    getData(true);
+    getData(1);
   }, [filter]);
 
   useEffect(() => {
     setText(search!);
-    getData(false, search!);
+    getData(1);
   }, [search]);
 
   useEffect(() => {
@@ -158,11 +184,42 @@ const ProductIdentifier = (context: any) => {
             </div>
           </header>
         </div>
-        <TabFilters filter={filter} setFilter={setFilter} />
+        <TabFilters activeTab={1} filter={filter} setFilter={setFilter} />
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-x-8 gap-y-10 mt-8 lg:mt-10">
           {data?.map((item: any, index: number) => (
             <ProductCard data={item} key={index} />
           ))}
+        </div>
+        <div className="flex items-center justify-center mt-8 space-x-2">
+          <button
+            onClick={() => {
+              if (currentPage > 1) {
+                setCurrentPage(currentPage - 1);
+                getData(currentPage - 1);
+              }
+            }}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:bg-gray-100"
+          >
+            Trước
+          </button>
+
+          <span className="text-sm font-medium">
+            Trang {currentPage}/{totalPages}
+          </span>
+
+          <button
+            onClick={() => {
+              if (currentPage < totalPages) {
+                setCurrentPage(currentPage + 1);
+                getData(currentPage + 1);
+              }
+            }}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:bg-gray-100"
+          >
+            Sau
+          </button>
         </div>
       </main>
     </div>

@@ -29,7 +29,7 @@ export default function NotyDropdown() {
     }
     return notifications.map((noty: any,index:number) => {
       const { message, path } = renderMessage(noty) as any;
-      const date = noty.CreatedDate;
+      const date = noty.createdAt;
       return (
         <>
           <div onClick={( ) => {
@@ -49,11 +49,11 @@ export default function NotyDropdown() {
       );
     });
   };
-  const countNoty = notifications?.filter((i: any) => !i.IsViewed)?.length;
+  const countNoty = notifications?.filter((i: any) => !i.isViewed)?.length;
   const viewdNoty = async() => {
     try {
-      await http.put("User/notification/view",notifications.map((i:any) => i.NotificationID));
-      setNotification(notifications.map((i:any) => ({...i,IsViewed:true})))
+      await http.put("user/notification/view",notifications.map((i:any) => i.id));
+      setNotification(notifications.map((i:any) => ({...i,isViewed:true})))
     } catch (error:any) {
       handleErrorHttp(error?.payload)
     }
