@@ -5,7 +5,7 @@ const Introduce = () => {
     <>
       <section
         id="home"
-        className="relative z-10 overflow-hidden bg-[url('/images/bg/bg.jpg')] bg-cover bg-center pb-16 pt-[120px] dark:bg-gray-dark md:pb-[120px] md:pt-[150px] xl:pb-[160px] xl:pt-[180px] 2xl:pb-[200px] 2xl:pt-[210px]"
+        className="relative z-10 overflow-hidden bg-[url('/bg.jpg')] bg-cover bg-center pb-16 pt-[120px] dark:bg-gray-dark md:pb-[120px] md:pt-[150px] xl:pb-[160px] xl:pt-[180px] 2xl:pb-[200px] 2xl:pt-[210px]"
       >
         <div
           className="absolute inset-0"
@@ -26,7 +26,7 @@ const Introduce = () => {
                 </p>
                 <div className="flex flex-col items-left justify-left space-y-2 sm:flex-row sm:space-x-2 sm:space-y-0">
                   <Link
-                    href=""
+                    href="http://example.com"
                     className="rounded-[8px] border border-gray-300 bg-primary px-8 py-4 text-base font-semibold text-white duration-300 ease-in-out hover:border-primary hover:bg-primary/80"
                   >
                     Tìm mua xe

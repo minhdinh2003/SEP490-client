@@ -1,4 +1,4 @@
-import { Blog } from "@/types/blog";
+import { Blog } from "@/type/blog";
 
 const blogData: Blog[] = [
   {
