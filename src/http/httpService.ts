@@ -49,7 +49,7 @@ class HttpService {
         }
     }
 
-    async getAll<T>( params: Record<string, any> = {}): Promise<T> {
+    async getAll<T>(params: Record<string, any> = {}): Promise<T> {
         try {
             const response = await this.http.get<T>(this.getUrl("/all"), { params });
             return response.data;

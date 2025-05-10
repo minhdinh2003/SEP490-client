@@ -309,24 +309,20 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
           <label htmlFor="">
             <div className="text-sm font-medium flex items-center">
               Trạng thái:
-              <span className={getStatusClass(data?.status)}>
-                {data?.status == "AVAILABLE"
-                  ? "Có sẵn"
-                  : data?.status == "SOLD"
-                  ? "Đã bán"
-                  : "Hết hàng"}
+              <span className={getStatusClass(data?.inventory?.quantity == 0 ? "SOLD" : "AVAILABLE")}>
+                {data?.inventory?.quantity == 0 ? "Đã bán" : "Có sẵn"}
               </span>
             </div>
           </label>
         </div>
-        <div>
+        {/* <div>
           <label htmlFor="">
             <div className="text-sm font-medium flex items-center">
               Địa chỉ:
               <span className="ml-1 font-semibold">{data?.address}</span>
             </div>
           </label>
-        </div>
+        </div> */}
         {!isQuickView && (
           <div className="flex flex-col space-y-1 gap-5 ">
             <div className="flex items-center justify-center bg-slate-100/70 dark:bg-slate-800/70 px-2 py-3 sm:p-3.5 rounded-full">
