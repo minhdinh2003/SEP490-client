@@ -17,9 +17,7 @@ import {
   RequestProductStatus,
   RequestStatus,
 } from "@/utils/helpers";
-import ButtonPrimary from "@/shared/Button/ButtonPrimary";
 import { ActionButton, ButtonIcon } from "@/shared/Button/CustomButton";
-import CreateWork from "../component/CreateJob";
 import useMessageStore from "@/store/useMessStore";
 import ModalMessage from "@/components/ModalMessage";
 import { useSearchParams } from "next/navigation";
@@ -29,6 +27,7 @@ import ListWorkOfRequest from "../component/ListWork";
 import RequestService from "@/http/requestService";
 import { ServiceResponse } from "@/type/service.response";
 import { IPagingParam } from "@/contains/paging";
+import EmployeeCreateWork from "../component/EmployeeCreateWork";
 
 const RequestList = () => {
   const [openPrice, setOpenPrice] = useState(false);
@@ -105,7 +104,7 @@ const RequestList = () => {
                       assignedTo: userStore?.user?.id, // Chỉ lấy các Request có TaskDetail được giao cho user có ID = A
                     },
                   },
-                }
+                },
               ],
             },
           },
@@ -234,6 +233,20 @@ const RequestList = () => {
         </td>
         <td className=" min-w-[300px] p-4 border-b border-blue-gray-50 flex ">
           <div className=" flex items-center gap-3">
+            {request.status != RequestStatus.REJECTED &&
+              request.status != RequestStatus.COMPLETED &&
+              request.status != RequestStatus.CANCELLED && (
+                <div className="flex items-center gap-3">
+                  <ButtonIcon
+                    onClick={() => {
+                      setOpenModal(true);
+                      setCurrentId(request.id);
+                    }}
+                    svg={"/create.svg"}
+                    tooltip="Tạo công việc"
+                  />
+                </div>
+              )}
             {request.status != RequestStatus.CANCELLED &&
               request.status != RequestStatus.REJECTED && (
                 <ButtonIcon
@@ -246,7 +259,7 @@ const RequestList = () => {
                   tooltip="Xem  công việc"
                 />
               )}
-{/* 
+            {/* 
             <ButtonIcon
               onClick={() => {
                 handleOpenModal();
@@ -425,6 +438,22 @@ const RequestList = () => {
         }}
         renderContent={() => <ListImageRequest id={idImage} />}
         modalTitle="Hình ảnh minh họa"
+      />
+      <NcModal
+        isOpenProp={openModal}
+        onCloseModal={() => setOpenModal(false)}
+        customClass="abc"
+        renderContent={() => (
+          <EmployeeCreateWork
+            callback={() => {
+              setOpenModal(false);
+              setCurrentId("");
+              getListRequest();
+            }}
+            idRequest={currentId}
+          />
+        )}
+        modalTitle="Tạo công việc"
       />
     </div>
   );
