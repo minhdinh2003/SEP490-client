@@ -3,7 +3,6 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css"; // Import CSS cơ bản
 import "swiper/css/navigation"; // Import CSS cho nút next/prev
 import { Navigation, Autoplay } from "swiper/modules";
-//Import
 
 const Carousel = () => {
   return (

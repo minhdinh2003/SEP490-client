@@ -1,3 +1,5 @@
+<<<<<<< HEAD
+=======
 "use client";
 import SiteHeader from "@/app/SiteHeader";
 import "@/fonts/line-awesome-1.3.0/css/line-awesome.css";
@@ -167,3 +169,4 @@ function RootLayout({
 }
 
 export default RootLayout;
+>>>>>>> origin/DuyDQ
