@@ -17,10 +17,8 @@ import NcImage from "@/shared/NcImage/NcImage";
 import Image from "next/image";
 import useCartStore from "@/store/useCartStore";
 import { handleErrorHttp } from "@/utils/handleError";
-import { HttpError } from "@/http/http";
 import { ResponError } from "@/type/ResponseType";
 import useAuthStore from "@/store/useAuthStore";
-import { formatAddress, getAddress } from "@/utils/helpers";
 
 export interface ProductCardProps {
   className?: string;
@@ -65,8 +63,7 @@ const ProductCard: FC<any> = ({
   const notifyAddTocart = async () => {
     try {
       await cartStore.addItemToCart({
-        ProductID,
-        Quantity: 1,
+        productId: data.id
       });
       toast.custom(
         (t) => (
@@ -82,7 +79,7 @@ const ProductCard: FC<any> = ({
             leaveTo="opacity-0 translate-x-20"
           >
             <p className="block text-base font-semibold leading-none">
-              Đã thêm vào giỏ hàng!
+              Đã thêm vào danh sách yêu thích!
             </p>
             <div className="border-t border-slate-200 dark:border-slate-700 my-4" />
             {renderProductCartOnNotify()}
@@ -246,7 +243,7 @@ const ProductCard: FC<any> = ({
             onClick={() => notifyAddTocart()}
           >
             <BagIcon className="w-3.5 h-3.5 mb-0.5" />
-            <span className="ms-1">Thêm vào giỏ hàng</span>
+            <span className="ms-1">Thêm vào danh sách yêu thích</span>
           </ButtonPrimary>
         )}
         <ButtonSecondary
