@@ -16,7 +16,6 @@ const brandsData: Brand[] = [
     description: "Hỗ trợ trả góp thủ tục tốt nhất, trong thời gian nhanh nhất"
   },
   {
-    
     id: 2,
     name: "Tailgrids",
     image: "/images/brands/checks.png",
