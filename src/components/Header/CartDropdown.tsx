@@ -2,23 +2,18 @@
 
 import { Popover, Transition } from "@/app/headlessui";
 import Prices from "@/components/Prices";
-import { Product, PRODUCTS } from "@/data/data";
 import { Fragment } from "react";
-import ButtonPrimary from "@/shared/Button/ButtonPrimary";
 import ButtonSecondary from "@/shared/Button/ButtonSecondary";
 import Image from "next/image";
 import Link from "next/link";
 import useCartStore from "@/store/useCartStore";
 import { handleErrorHttp } from "@/utils/handleError";
-import useCheckoutStore from "@/store/useCheckoutStorage";
 import { useRouter } from "next/navigation";
 import { getUrlImage } from "@/utils/helpers";
 
 export default function CartDropdown() {
   const router = useRouter()
   const cartStore = useCartStore();
-  const { cart, removeItemFromCart, updateCart } = cartStore;
-  const checkoutStore: any = useCheckoutStore();
   const handleDeleteCart = async (id: number | string) => {
     try {
       cartStore.removeItemFromCart(id);
