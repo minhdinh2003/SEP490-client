@@ -156,4 +156,6 @@ function RootLayout({
     </html>
   );
 }
+
 export default RootLayout;
+

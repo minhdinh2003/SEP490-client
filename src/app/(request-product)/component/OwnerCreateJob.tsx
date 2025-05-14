@@ -192,21 +192,6 @@ const OwnerCreateJob = ({ editItem, callback = () => {}, idRequest }: any) => {
                 <span className="text-red-500">{errors.userId}</span>
               )}
             </label>
-            {/* <label className="block">
-              <span className="text-neutral-800 dark:text-neutral-200">
-                Chi phí phát sinh nếu có
-              </span>
-              <Input
-                value={formData.price}
-                onChange={changeData("price")}
-                className="mt-1"
-                name="Title"
-                type="number"
-              />
-              {errors.price && (
-                <span className="text-red-500">{errors.price}</span>
-              )}
-            </label> */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Mô tả

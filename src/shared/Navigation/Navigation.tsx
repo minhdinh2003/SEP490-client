@@ -5,12 +5,12 @@ import useAuthStore from "@/store/useAuthStore";
 
 function Navigation() {
   const auth:any  = useAuthStore();
-
-  const role = auth?.user?.role;
+  const IsCreator = auth?.IsCreator as boolean;
   return (
     <ul className="nc-Navigation flex items-cente">
       {NAVIGATION_DEMO_2.filter((i:any) => {
-        if(!i.role?.includes(role)){
+        if(i.hide && !IsCreator){
+
           return false;
         }
      return true;

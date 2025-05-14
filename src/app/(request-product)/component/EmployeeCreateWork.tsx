@@ -3,16 +3,22 @@ import { useEffect, useState } from "react";
 import http from "@/http/http";
 import ButtonPrimary from "@/shared/Button/ButtonPrimary";
 import Input from "@/shared/Input/Input";
-import Select from "react-select";
 import { handleErrorHttp } from "@/utils/handleError";
 import toast from "react-hot-toast";
 import { IPagingParam } from "@/contains/paging";
 import { ServiceResponse } from "@/type/service.response";
 import UserService from "@/http/userService";
 import TaskDetailService from "@/http/taskDetailService";
+import useAuthStore from "@/store/useAuthStore";
 import taskTemplateService from "@/http/taskTemplateService";
+import Select from "react-select";
 
-const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
+const EmployeeCreateWork = ({
+  editItem,
+  callback = () => {},
+  idRequest,
+}: any) => {
+  const userStore: any = useAuthStore();
   const initialData = {
     requestId: 0,
     assignedTo: 0,
@@ -33,7 +39,7 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
   useEffect(() => {
     const fetchTaskTemplates = async () => {
       try {
-        const response = await taskTemplateService.getAll<ServiceResponse>(); // API endpoint
+        const response = await taskTemplateService.getAll<ServiceResponse>() // API endpoint
         const templates = response.data.map((item: any) => ({
           value: item.title,
           label: item.title,
@@ -47,7 +53,6 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
 
     fetchTaskTemplates();
   }, []);
-
   useEffect(() => {
     if (editItem) {
       setFormData({
@@ -75,7 +80,7 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
       newErrors.deadline = "Ngày hoàn thành không thể ở quá khứ";
       valid = false;
     }
-
+    formData.assignedTo = userStore.user.id;
     if (!formData.assignedTo) {
       newErrors.assignedTo = "Chưa chọn nhân viên";
     }
@@ -113,18 +118,36 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
     }
   };
 
-  const changeData = (key: any) => (e: any) => {
+  // Hàm thay đổi dữ liệu form và reset lỗi cho trường cụ thể
+  const changeData = (key: string) => (e: any) => {
     const value = e.target.value;
     setFormData({ ...formData, [key]: value });
+
+    // Reset lỗi cho trường dữ liệu cụ thể
+    if (errors[key]) {
+      setErrors((prevErrors: any) => ({
+        ...prevErrors,
+        [key]: undefined,
+      }));
+    }
   };
 
-  const handleTitleChange = (selectedValue: string) => {
-    if (selectedValue === "Khác") {
+  const handleTitleChange = (selectedValue: any) => {
+    
+    if (selectedValue && selectedValue.value === "Khác") {
       setShowCustomTitleInput(true); // Hiển thị input nếu chọn "Khác"
       setFormData({ ...formData, title: "" }); // Xóa giá trị title hiện tại
     } else {
       setShowCustomTitleInput(false); // Ẩn input nếu chọn giá trị khác
-      setFormData({ ...formData, title: selectedValue }); // Cập nhật title từ combo box
+      setFormData({ ...formData, title: selectedValue.value }); // Cập nhật title từ combo box
+    }
+
+    // Reset lỗi cho trường tiêu đề
+    if (errors.title) {
+      setErrors((prevErrors: any) => ({
+        ...prevErrors,
+        title: undefined,
+      }));
     }
   };
 
@@ -197,41 +220,6 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
               )}
             </label>
 
-            {/* Nhân viên */}
-            <label className="block">
-              <span className="text-neutral-800 dark:text-neutral-200">
-                Nhân viên
-              </span>
-              {/* <Select onChange={changeData("assignedTo")}>
-                <option value="">-- Chọn nhân viên --</option>
-                {employees.map((employee: any) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.fullName}
-                  </option>
-                ))}
-              </Select> */}
-              <Select
-                options={employees.map((employee: any) => ({
-                  value: employee.id,
-                  label: employee.fullName,
-                }))}
-                value={employees.find(
-                  (employee: any) => employee.id === formData.assignedTo
-                )}
-                onChange={(selectedOption: any) => {
-                  changeData("assignedTo")({
-                    target: { value: selectedOption?.value },
-                  });
-                }}
-                placeholder="-- Chọn nhân viên --"
-                isSearchable
-                className="mt-1 w-full"
-              />
-              {errors.assignedTo && (
-                <span className="text-red-500">{errors.assignedTo}</span>
-              )}
-            </label>
-
             {/* Chi phí */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
@@ -265,6 +253,8 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
                 <span className="text-red-500">{errors.deadline}</span>
               )}
             </label>
+
+            {/* Địa chỉ */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Địa chỉ
@@ -280,6 +270,7 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
                 <span className="text-red-500">{errors.address}</span>
               )}
             </label>
+
             {/* Mô tả */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
@@ -308,4 +299,4 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
   );
 };
 
-export default CreateWork;
+export default EmployeeCreateWork;

@@ -39,6 +39,16 @@ const useMessageStore = create(
             (message: any) => message.messageID !== messageID
           ),
         })),
+        markAsRead: (roomId: string) =>
+          set((state: any) => ({
+            unreadCounts: { ...state.unreadCounts, [roomId]: 0 },
+          })),
+  
+        // Cập nhật số lượng tin nhắn chưa đọc
+        updateUnreadCount: (count: number) =>
+          set((state: any) => ({
+            unreadCounts: { ...state.unreadCounts },
+          })), 
     }),
     {
       name: "messages-storage",
