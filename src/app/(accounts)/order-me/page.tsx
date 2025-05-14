@@ -19,10 +19,11 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import TabOrder from "../../(accounts)/account-order/TabOrder";
+import TabOrder from "../account-order/TabOrder";
 import OrderService from "@/http/orderService";
 import { IPagingParam } from "@/contains/paging";
 import { ServiceResponse } from "@/type/service.response";
+import Select from "@/shared/Select/Select";
 
 const AccountOrder = () => {
   const query = useSearchParams();
@@ -44,6 +45,11 @@ const AccountOrder = () => {
       pageSize: 1000,
       pageNumber: 1,
       conditions: [
+        {
+          key: "userId",
+          condition: "equal",
+          value: userStore.user.id,
+        },
         {
           key: "isRepair",
           condition: "equal",
@@ -74,6 +80,18 @@ const AccountOrder = () => {
     const { product } = item;
     return (
       <div className="pt-5 pb-10 border-b last:border-b-0">
+        {product?.ProductCode && (
+          <div
+            onClick={() => router.push(`/product-code/${product?.ProductCode}`)}
+            className="mb-5 text-gray-500"
+          >
+            Mã định danh :
+            <span className="font-bold text-green-500 cursor-pointer">
+              {" "}
+              {product?.ProductCode}
+            </span>
+          </div>
+        )}
         <div key={index} className="flex ">
           <div className="relative flex-shrink-0 w-16 h-24 overflow-hidden sm:w-20 rounded-xl bg-slate-100">
             <Image
@@ -163,7 +181,7 @@ const AccountOrder = () => {
       switch (status) {
         case "PROCESSING":
           toast.success("Đã chuyển đơn hàng");
-          break;
+          break
         case "SHIPPED":
           toast.success("Đã giao hàng");
           break;
@@ -185,6 +203,7 @@ const AccountOrder = () => {
     }
     return StatusOrderDetails[status as StatusOrder].text;
   };
+
 
   useEffect(() => {
     setListOrder(listAll);
@@ -224,24 +243,13 @@ const AccountOrder = () => {
             >
               Xem đơn hàng
             </ButtonSecondary>
-            {
-              order?.status !== StatusOrder.SHIPPED && 
-              order?.paymentMethod == 1 && ( // thanh toán tại quầy
-                <ButtonPrimary
-                  onClick={() => changeStatus(order?.id, "SHIPPED")}
-                  sizeClass="py-2.5 px-4 sm:px-6"
-                  fontSize="text-sm font-medium"
-                >
-                  Đã nhận tiền mặt
-                </ButtonPrimary>
-              )}
-            {order?.paymentMethod !== 1 && order?.status == StatusOrder.PENDING && (
+            {order?.status == StatusOrder.PENDING && (
               <ButtonPrimary
                 onClick={() => changeStatus(order?.id, "PROCESSING")}
                 sizeClass="py-2.5 px-4 sm:px-6"
                 fontSize="text-sm font-medium"
               >
-                Vận chuyển đơn hàng
+                Vân chuyển đơn hàng
               </ButtonPrimary>
             )}
           </div>
@@ -321,6 +329,8 @@ const AccountOrder = () => {
 
   return (
     <div className="space-y-10 sm:space-y-12">
+      {/* HEADING */}
+      <h2 className="text-2xl font-semibold sm:text-3xl">Đơn hàng đã đặt</h2>
       <TabOrder activeTab={activeTab} setActiveTab={setActiveTab} />
       {activeTab ? renderOrderRequest() : renderOrder()}
     </div>

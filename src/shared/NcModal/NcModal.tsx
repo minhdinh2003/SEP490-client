@@ -13,6 +13,8 @@ export interface NcModalProps {
   modalTitle?: ReactNode;
   isOpenProp?: boolean;
   onCloseModal?: () => void;
+  customClass?: string;
+
 }
 
 const NcModal: FC<NcModalProps> = ({
@@ -24,6 +26,7 @@ const NcModal: FC<NcModalProps> = ({
   modalTitle = "Modal title",
   isOpenProp,
   onCloseModal,
+  customClass = "w-full"
 }) => {
   let [isOpen, setIsOpen] = useState(!!isOpenProp);
 
@@ -89,6 +92,7 @@ const NcModal: FC<NcModalProps> = ({
             >
               <div
                 className={`inline-block w-full my-5 overflow-hidden text-left align-middle transition-all transform bg-white border border-black border-opacity-5 shadow-xl rounded-2xl sm:my-8 dark:bg-neutral-800 dark:border-neutral-700 text-neutral-900 dark:text-neutral-300 ${contentExtraClass}`}
+
               >
                 <div className="py-4 px-6 text-center relative border-b border-neutral-100 dark:border-neutral-700 md:py-5">
                   <ButtonClose

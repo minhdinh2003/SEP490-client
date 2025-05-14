@@ -16,6 +16,8 @@ export interface NavItemType {
   type?: "dropdown" | "megaMenu" | "none";
   isNew?: boolean;
   hide?:boolean;
+  role?: any;
+
 }
 
 export interface NavigationItemProps {

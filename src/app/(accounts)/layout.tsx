@@ -27,11 +27,11 @@ const pages: {
     name: "Đơn hàng của tôi",
     link: "/account-order",
   },
-  // {
-  //   name: "Đơn hàng được đặt",
-  //   link: "/order-me",
-  //   hide: true,
-  // },
+  {
+    name: "Đơn hàng được đặt",
+    link: "/order-me",
+    hide: true,
+  },
   {
     name: "Lịch sử giao dịch",
     link: "/account-history",
@@ -50,7 +50,7 @@ const CommonLayout: FC<CommonLayoutProps> = ({ children }) => {
   const pathname = usePathname();
   const userStorage: any = useAuthStore();
   const auth: any = useAuthStore();
-  const isOwner = auth.user.role == "OWNER";
+  const IsCreator = auth?.IsCreator as boolean;
   return (
     <div className="nc-AccountCommonLayout container">
       <div className="mt-14 sm:mt-20">
@@ -71,7 +71,7 @@ const CommonLayout: FC<CommonLayoutProps> = ({ children }) => {
           <div className="flex space-x-8 md:space-x-14 overflow-x-auto hiddenScrollbar">
             {pages
               .filter((i: any) => {
-                if (i.hide && !isOwner) {
+                if (i.hide && !IsCreator) {
                   return false;
                 }
                 return true;

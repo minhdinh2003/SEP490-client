@@ -16,19 +16,24 @@ import { io } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
 import CommonClient from "./CommonClient";
 import "./globals.scss";
-import { Roboto, Roboto_Serif } from "next/font/google";
+import { Roboto } from "next/font/google";
 import UserService from "@/http/userService";
 import { IPagingParam } from "@/contains/paging";
-import CustomerChat from "@/components/CustomerChat"; // Import component chat
-import OwnerChat from "@/components/OwnerChat";
-
-const roboto = Roboto_Serif({
+const roboto = Roboto({
   weight: ["400", "700", "500"],
+  // style: ['normal', 'italic'],
   subsets: ["vietnamese"],
+  // display: 'swap',
 });
 
 export let socket: any;
 export const connectionID = uuidv4();
+
+// const poppins = Poppins({
+//   subsets: ["latin"],
+//   display: "swap",
+//   weight: ["300", "400", "500", "600", "700"],
+// });
 
 function RootLayout({
   children,
@@ -53,7 +58,6 @@ function RootLayout({
       getListCart();
     }
   }, []);
-
   useEffect(() => {
     const param: IPagingParam = {
       pageSize: 1000,
@@ -75,10 +79,10 @@ function RootLayout({
       })
       .catch(() => {});
   }, [user]);
-
   const pathname = usePathname();
   const listNotFootter = ["/auction-detail"];
   const isNotFooter = listNotFootter.some((path) => pathname.startsWith(path));
+  // Noti
 
   const connectSocket = () => {
     const userID = user.id;
@@ -103,9 +107,9 @@ function RootLayout({
           console.log("Connected to server");
           socket.emit("register", userID, connectionID);
         });
-
-        // Nhận thông báo từ người dùng
+        // nhận thông báo từ ng dùng
         socket.on("message", (message: any) => {
+          //NotificationID
           const data = JSON.parse(message?.rawData || {});
           if (
             message.type == "PRODUCT_OWNER_CHAT_REQUEST" ||
@@ -115,12 +119,6 @@ function RootLayout({
               ...message,
               message: data.message,
             });
-          }
-          if (
-            message.type == "USER_CHAT_REQUEST" ||
-            message.type == "OWNER_CHAT_WITH_USER"
-          ) {
-            messStore?.(data.requestId);
           }
 
           if (
@@ -136,7 +134,6 @@ function RootLayout({
         console.error("Error registering user:", error);
       });
   };
-
   useEffect(() => {
     if (user && user.id) {
       connectSocket();
@@ -145,7 +142,6 @@ function RootLayout({
       socket?.disconnect();
     };
   }, [user]);
-  const isOwner = user?.role == "OWNER";
   return (
     <html lang="en" dir="" className={roboto.className}>
       <body
@@ -155,11 +151,6 @@ function RootLayout({
         <SiteHeader />
         <ToastProvider>{children}</ToastProvider>
         <CommonClient />
-
-        {/* Thêm component chat */}
-        {!isOwner && <CustomerChat />}
-        {isOwner && <OwnerChat />}
-
         {!isNotFooter && <Footer />}
       </body>
     </html>
@@ -167,3 +158,4 @@ function RootLayout({
 }
 
 export default RootLayout;
+
