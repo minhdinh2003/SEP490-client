@@ -21,11 +21,12 @@ import { ListImageRequest } from "./ListImageRequest";
 import ListWorkOfRequest from "../component/ListWork";
 import { IPagingParam } from "@/contains/paging";
 import RequestService from "@/http/requestService";
+import OrderService from "@/http/orderService";
 import { ServiceResponse } from "@/type/service.response";
 import useCheckoutStore from "@/store/useCheckoutStorage";
 import Input from "@/shared/Input/Input";
 
-const Myrequest = ({ idRequest, callback = () => {} }: any) => {
+const Myrequest = ({ idRequest, callback = () => { } }: any) => {
   const messStore: any = useMessageStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -105,11 +106,11 @@ const Myrequest = ({ idRequest, callback = () => {} }: any) => {
       };
       const res = await RequestService.getPaging<ServiceResponse>(param);
       setListRequest(res.data.data);
-      
+
       setTotalPages(Math.floor(res.data?.totalCount / 5) + 1);
-      
+
       console.log(totalPages);
-    } catch (error: any) {}
+    } catch (error: any) { }
   };
   useEffect(() => {
     getListRequest();
@@ -144,7 +145,7 @@ const Myrequest = ({ idRequest, callback = () => {} }: any) => {
     isDone: any,
     money: any,
     AddressID: any,
-    callback = () => {},
+    callback = () => { },
     isThanhToan = false
   ) => {
     try {
@@ -181,6 +182,18 @@ const Myrequest = ({ idRequest, callback = () => {} }: any) => {
     );
     return priceArisen;
   };
+  const [orders, setOrders] = useState<any[]>([]);
+  const fetchOrders = async () => {
+    try {
+      const res = await OrderService.getAll<ServiceResponse>();
+      setOrders(res.data || []);
+    } catch (error: any) {
+      toast.error("Không thể lấy danh sách đơn hàng");
+    }
+  };
+  useEffect(() => {
+    fetchOrders();
+  }, []);
   const renderListTable = () =>
     finalList?.map((request: any, index: number) => (
       <tr
@@ -262,28 +275,29 @@ const Myrequest = ({ idRequest, callback = () => {} }: any) => {
               request.isUserConfirm && (
                 <ButtonIcon
                   onClick={() => {
-                    setOpenModalWork(true);
-                    setIdWork(request.id);
-                    setImages(request.Images);
-                    setMoneyCheckout(
-                      request?.NegotiatedPrice -
-                        Math.floor(
-                          (Number(request?.NegotiatedPrice) * 50) / 100
-                        )
-                    );
-                    setMoneyDatcoc(
-                      Math.floor((Number(request?.NegotiatedPrice) * 50) / 100)
-                    );
-                    setIsDatcoc(
-                      request.DepositAmount &&
+                    setOpenModalWork(false); // Đảm bảo đóng modal trước
+                    setTimeout(() => {
+                      setIdWork(request.id);
+                      setImages(request.Images);
+                      setMoneyCheckout(
+                        request?.NegotiatedPrice -
+                        Math.floor((Number(request?.NegotiatedPrice) * 50) / 100)
+                      );
+                      setMoneyDatcoc(
+                        Math.floor((Number(request?.NegotiatedPrice) * 50) / 100)
+                      );
+                      setIsDatcoc(
+                        request.DepositAmount &&
                         request.DepositAmount > 0 &&
                         request.DepositAmount < request?.NegotiatedPrice
-                    );
-                    setIsThanhToan(
-                      request.DepositAmount &&
+                      );
+                      setIsThanhToan(
+                        request.DepositAmount &&
                         request.DepositAmount > 0 &&
                         request.DepositAmount >= request?.NegotiatedPrice
-                    );
+                      );
+                      setOpenModalWork(true); // Mở lại modal với props mới
+                    }, 100); // Đợi modal đóng xong
                   }}
                   svg={"/view.svg"}
                   tooltip="Xem công việc"
@@ -317,7 +331,10 @@ const Myrequest = ({ idRequest, callback = () => {} }: any) => {
                   tooltip="Xem ảnh minh họa"
                 />
               )}
-            {request.status == RequestStatus.COMPLETED && !request.isPay && (
+            {request.status == RequestStatus.COMPLETED && !orders.some(
+                (order: any) =>
+                  order.requestId === request.id && order.isPay === true,
+              ) && (
               <ButtonIcon
                 onClick={() => {
                   (checkoutStore as any).setRequestCheckout([
@@ -487,6 +504,7 @@ const Myrequest = ({ idRequest, callback = () => {} }: any) => {
             moneyCheckout={moneyCheckout}
             isThanhToan={isThanhToan}
             isCustomer={true}
+            setIsModalOpen={setIsModalOpen}
             images={images}
             callback={() => {
               getListRequest();

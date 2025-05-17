@@ -4,11 +4,13 @@ import { useGetData } from "@/hooks/useGetData";
 import http from "@/http/http";
 import { handleErrorHttp } from "@/utils/handleError";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import toast from "react-hot-toast";
 import Status from "@/shared/Status/Status";
 import useAuthStore from "@/store/useAuthStore";
+import OrderService from "@/http/orderService";
 import {
+  dateFormat2,
   dateFormat3,
   dateFormat4,
   formatPriceVND,
@@ -27,14 +29,13 @@ import Input from "@/shared/Input/Input";
 import { ListImageRequest } from "../my-request/ListImageRequest";
 import ListWorkOfRequest from "../component/ListWork";
 import RequestService from "@/http/requestService";
+import UserService from "@/http/userService";
 import { ServiceResponse } from "@/type/service.response";
 import { IPagingParam } from "@/contains/paging";
-
 
 const RequestList = () => {
   const [openPrice, setOpenPrice] = useState(false);
   const [openReject, setOpenReject] = useState(false);
-  const [pricce, setPrice] = useState("");
   const [reasonReject, setReasonReject] = useState("");
   const [idPrice, setIdPrice] = useState("");
   const [isDatcoc, setIsDatcoc] = useState(false);
@@ -64,7 +65,15 @@ const RequestList = () => {
     messStore?.setMessages([]);
     messStore?.setIdRoom?.(null);
   };
-
+  const [confirmPayModal, setConfirmPayModal] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const handleConfirmPay = () => {
+    if (selectedRequest) {
+      handleCreateOrder(selectedRequest);
+      setConfirmPayModal(false);
+      setSelectedRequest(null);
+    }
+  };
   const [totalPages, setTotalPages] = useState(1);
   const getListRequest = async (page: number = 1, keyword: string = "") => {
     try {
@@ -79,7 +88,12 @@ const RequestList = () => {
               AND: [
                 {
                   type: {
-                    not: "EMPLOYEE_TASK", // Yêu cầu có type khác "EMPLOYEE_TASK"
+                    not: "EMPLOYEE_TASK",
+                  },
+                },
+                {
+                  id: {
+                    not: -1,
                   },
                 },
                 {
@@ -115,13 +129,13 @@ const RequestList = () => {
       const res = await RequestService.getPaging<ServiceResponse>(param);
       setListRequest(res.data.data);
       setTotalPages(Math.floor(res.data?.totalCount / 5) + 1);
-    } catch (error: any) {}
+    } catch (error: any) { }
   };
   useEffect(() => {
     getListRequest(currentPage, searchKeyword);
   }, [currentPage, searchKeyword]);
 
-  // REJECct
+  // REJECT
   const handleReject = async (id: any) => {
     try {
       await RequestService.updateStatus(id, {
@@ -131,38 +145,75 @@ const RequestList = () => {
       toast.success("Đã từ chối");
       getListRequest();
       setOpenReject(false);
-
       setReasonReject("");
     } catch (error: any) {
       handleErrorHttp(error?.payload);
     }
   };
-
+  const [orders, setOrders] = useState<any[]>([]);
+  const fetchOrders = async () => {
+    try {
+      const res = await OrderService.getAll<ServiceResponse>();
+      setOrders(res.data || []);
+    } catch (error: any) {
+      toast.error("Không thể lấy danh sách đơn hàng");
+    }
+  };
+  useEffect(() => {
+    fetchOrders();
+  }, []);
   // Approve
   const handleApprove = async () => {
-    if (isNaN(Number(pricce)) || Number(pricce) <= 0) {
-      toast.error("Giá không hợp lệ");
-      return;
-    }
-
     try {
       await RequestService.updateStatus(idPrice, {
         status: "APPROVED",
         comment: "",
-        price: pricce,
       });
       toast.success("Đã xác nhận");
       getListRequest();
       setOpenPrice(false);
-      setPrice("");
     } catch (error: any) {
       handleErrorHttp(error?.payload);
     }
   };
 
+  //create order 
+
+  const handleCreateOrder = async (request: any) => {
+    try {
+      // Lấy thông tin user từ userId
+      const userRes = await UserService.getById<ServiceResponse>(request.userId);
+      const user = userRes.data;
+
+      const body = {
+        requestId: Number(request.id), // Đảm bảo là số nguyên
+        fullName: user.fullName,
+        address: request.address || "",
+        phoneNumber: user.phoneNumber,
+        paymentMethod: 1, // hoặc giá trị phù hợp
+        isPay: true
+      };
+
+      const res = await OrderService.post<ServiceResponse>(
+        "/createOrderRepair?status=SHIPPED",
+        body
+      );
+
+      if (!res.success) {
+        toast.error(res.devMessage);
+        return;
+      }
+
+      toast.success("Tạo đơn hàng thành công");
+      getListRequest();
+      window.location.reload();
+    } catch (error: any) {
+      toast.error("Có lỗi xảy ra khi tạo đơn hàng");
+    }
+  };
   const getPriceArisen = (task: any) => {
     const priceArisen = task?.TaskDetail?.reduce(
-      (acc: number, taskDetail: any) => acc + taskDetail.price,
+      (acc: number, taskDetail: any) => acc + taskDetail.incidentalCosts,
       0
     );
     return priceArisen;
@@ -174,23 +225,23 @@ const RequestList = () => {
         className={`${request?.id == idNoty ? "bg-green-200" : ""}`}
       >
         <td key={index} className="p-4 border-b border-blue-gray-50">
-          <div className="flex items-center gap-3 min-w-[100px]">
+          <div className="flex items-center gap-3 min-w-[90px]">
             <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
               {request?.user.fullName}
             </p>
           </div>
         </td>
         <td key={index} className="p-4 border-b border-blue-gray-50">
-          <div className="flex items-center gap-3 min-w-[50px]">
+          <div className="flex items-center gap-3 min-w-[40px]">
             <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
               {request?.user.phoneNumber || ""}
             </p>
           </div>
         </td>
         <td key={index} className="p-4 border-b border-blue-gray-50">
-          <div className="flex items-center gap-3 min-w-[100px]">
+          <div className="flex items-center gap-3 min-w-[80px]">
             <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
-              {dateFormat3(request?.createdAt)}
+              {dateFormat2(request?.createdAt)}
             </p>
           </div>
         </td>
@@ -220,7 +271,7 @@ const RequestList = () => {
             {formatPriceVND(getPriceArisen(request))}
           </p>
         </td>
-        <td className="p-4 border-b border-blue-gray-50 min-w-[150px]">
+        <td className="p-4 border-b border-blue-gray-50 min-w-[200px]">
           <Status
             text={getRequestProductStatusText(request.status)}
             color={getRequestProductStatusColor(request.status)}
@@ -293,6 +344,21 @@ const RequestList = () => {
               svg={"/image.svg"}
               tooltip="Xem sản phẩm cần sửa"
             />
+            {request.status === RequestStatus.COMPLETED &&
+              !orders.some(
+                (order: any) =>
+                  order.requestId === request.id && order.isPay === true,
+              ) && (
+                <ButtonIcon
+                  onClick={() => {
+                    setSelectedRequest(request);
+                    setConfirmPayModal(true);
+                  }}
+                  svg={"/pay.svg"}
+                  tooltip="Đã Thanh toán"
+                />
+              )}
+
           </div>
         </td>
       </tr>
@@ -308,6 +374,18 @@ const RequestList = () => {
     finalList.splice(index, 1);
     finalList.unshift(item);
   }
+
+  const createWorkComponent = useMemo(() => (
+    <CreateWork
+      callback={() => {
+        setOpenModal(false);
+        setCurrentId("");
+        getListRequest();
+      }}
+      idRequest={currentId}
+    />
+  ), [openModal, currentId]);
+
   return (
     <div className="nc-CartPage">
       <ModalMessage
@@ -435,18 +513,10 @@ const RequestList = () => {
         isOpenProp={openModal}
         onCloseModal={() => setOpenModal(false)}
         customClass="abc"
-        renderContent={() => (
-          <CreateWork
-            callback={() => {
-              setOpenModal(false);
-              setCurrentId("");
-              getListRequest();
-            }}
-            idRequest={currentId}
-          />
-        )}
+        renderContent={() => createWorkComponent}
         modalTitle="Tạo công việc"
       />
+
       <NcModal
         isOpenProp={openWork}
         onCloseModal={() => {
@@ -468,7 +538,33 @@ const RequestList = () => {
         )}
         modalTitle="Danh sách công việc"
       />
-
+      
+      <NcModal
+        isOpenProp={confirmPayModal}
+        onCloseModal={() => {
+          setConfirmPayModal(false);
+          setSelectedRequest(null);
+        }}
+        customClass="abc"
+        renderContent={() => (
+          <div>
+            <div className="mt-3 flex items-center justify-center gap-3">
+              <ButtonPrimary onClick={handleConfirmPay}>Xác nhận</ButtonPrimary>
+              <ButtonPrimary
+                className="bg-gray-300 text-gray-700"
+                onClick={() => {
+                  setConfirmPayModal(false);
+                  setSelectedRequest(null);
+                  window.location.reload(); 
+                }}
+              >
+                Hủy
+              </ButtonPrimary>
+            </div>
+          </div>
+        )}
+        modalTitle="Xác nhận thanh toán"
+      />
       <NcModal
         isOpenProp={openPrice}
         onCloseModal={() => {
@@ -477,14 +573,14 @@ const RequestList = () => {
         customClass="abc"
         renderContent={() => (
           <div>
-            <div className="font-semibold mb-2">Giá thỏa thuận</div>
-            <div className="w-[400px]">
+            {/* <div className="font-semibold mb-2">Chấp Nhận Yêu Cầu</div> */}
+            {/* <div className="w-[400px]">
               <Input
-                value={pricce}
+                value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 type="number"
               />
-            </div>
+            </div> */}
             <div className="mt-3 flex items-center justify-center">
               <ButtonPrimary onClick={() => handleApprove()}>
                 Xác nhận
@@ -492,7 +588,7 @@ const RequestList = () => {
             </div>
           </div>
         )}
-        modalTitle="Nhập giá"
+        modalTitle="Đồng ý yêu cầu"
       />
       <NcModal
         isOpenProp={openReject}
@@ -528,7 +624,7 @@ const RequestList = () => {
         }}
         renderContent={() => <ListImageRequest id={idImage} />}
         modalTitle="Hình ảnh minh họa"
-      /> 
+      />
     </div>
   );
 };
