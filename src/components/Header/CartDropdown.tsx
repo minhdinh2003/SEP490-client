@@ -2,23 +2,18 @@
 
 import { Popover, Transition } from "@/app/headlessui";
 import Prices from "@/components/Prices";
-import { Product, PRODUCTS } from "@/data/data";
 import { Fragment } from "react";
-import ButtonPrimary from "@/shared/Button/ButtonPrimary";
 import ButtonSecondary from "@/shared/Button/ButtonSecondary";
 import Image from "next/image";
 import Link from "next/link";
 import useCartStore from "@/store/useCartStore";
 import { handleErrorHttp } from "@/utils/handleError";
-import useCheckoutStore from "@/store/useCheckoutStorage";
 import { useRouter } from "next/navigation";
 import { getUrlImage } from "@/utils/helpers";
 
 export default function CartDropdown() {
   const router = useRouter()
   const cartStore = useCartStore();
-  const { cart, removeItemFromCart, updateCart } = cartStore;
-  const checkoutStore: any = useCheckoutStore();
   const handleDeleteCart = async (id: number | string) => {
     try {
       cartStore.removeItemFromCart(id);
@@ -30,16 +25,16 @@ export default function CartDropdown() {
   const totalPriceCart = cartStore?.cart.reduce((total: number, item: any) => {
     return (total += item.Price * item.Quantity);
   }, 0);
-  const renderProduct = (item: any, index: number, close: () => void) => {
-    const { ProductName:Name, Price, Images:image, CartItemID, Quantity } = item;
-    const finalImage = getUrlImage(image)
+  const renderProduct = (id: any, item: any, index: number, close: () => void) => {
+    const { name, price, listImage } = item;
+    const finalImage = getUrlImage(listImage)
     return (
       <div key={index} className="flex py-5 last:pb-0">
         <div className="relative h-24 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100">
           <Image
             fill
             src={finalImage.mainImage}
-            alt={Name}
+            alt={name}
             className="h-full w-full object-contain object-center"
           />
           <div
@@ -55,12 +50,12 @@ export default function CartDropdown() {
               <div>
                 <h3 className="text-base font-medium ">
                   <div onClick={close} >
-                    {Name}
+                    {name}
                   </div>
-                  <p className="text-gray-500 dark:text-slate-400">{`x${Quantity}`}</p>
+                  {/* <p className="text-gray-500 dark:text-slate-400">{`x${Quantity}`}</p> */}
                 </h3>
               </div>
-              <Prices price={Price} className="mt-0.5" />
+              <Prices price={price} className="mt-0.5" />
             </div>
           </div>
           <div className="flex flex-1 items-end justify-between text-sm">
@@ -68,11 +63,11 @@ export default function CartDropdown() {
 
             <div className="flex">
               <button
-                onClick={() => handleDeleteCart(CartItemID)}
+                onClick={() => handleDeleteCart(id)}
                 type="button"
                 className="font-medium text-primary-6000 dark:text-primary-500 "
               >
-                Xóa
+                Bỏ yêu thích
               </button>
             </div>
           </div>
@@ -151,25 +146,21 @@ export default function CartDropdown() {
                 <div className="overflow-hidden rounded-2xl shadow-lg ring-1 ring-black/5 dark:ring-white/10">
                   <div className="relative bg-white dark:bg-neutral-800">
                     <div className="max-h-[60vh] p-5 overflow-y-auto hiddenScrollbar">
-                      <h3 className="text-xl font-semibold">Giỏ hàng</h3>
+                      <h3 className="text-xl font-semibold">Danh sách yêu thích</h3>
                       <div className="divide-y divide-slate-100 dark:divide-slate-700">
-                        {cartStore.cart.map((item, index) =>
-                          renderProduct(item, index, close)
+                        {cartStore.cart.map((item: any, index) =>
+                          renderProduct(item.id, item.product, index, close)
                         )}
                       </div>
                     </div>
                     <div className="bg-neutral-50 dark:bg-slate-900 p-5">
-                      <p className="flex justify-between font-semibold text-slate-900 dark:text-slate-100">
-                        <span></span>
-                        <span className="">{totalPriceCart} VND</span>
-                      </p>
                       <div className="flex space-x-2 mt-5">
                         <ButtonSecondary
                           href="/cart"
                           className="flex-1 border border-slate-200 dark:border-slate-700"
                           onClick={close}
                         >
-                          Xem giỏ hàng
+                          Xem danh sách yêu thích
                         </ButtonSecondary>
                       </div>
                     </div>

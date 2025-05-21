@@ -67,118 +67,46 @@ export function formatPriceVND(price: any) {
 }
 
 export const renderMessage = (notification: any) => {
-  const { Type, RawData, SenderName } = notification;
-  const data = JSON.parse(RawData);
+  const { type, rawData, senderName } = notification;
+  const data = JSON.parse(rawData);
 
   let message = "";
   let path = "";
 
-  switch (Type) {
-    case "User_Reply_Request":
-      message = `${SenderName} đã trả lời yêu cầu: ${data.Title}`;
-      path = `/request/${data.RequestID}`;
+  switch (type) {
+    case "USER_SEND_REQUEST_PRODUCT_OWNER":
+      message = `${senderName} đã gửi yêu cầu sửa chữa tới bạn`;
+      path = `/request-list`;
       break;
-    case "Creator_Reply_Request":
-      message = `${SenderName} đã trả lời yêu cầu: ${data.Title}`;
-      path = `/request/${data.RequestID}`;
+    case "SEND_VOUCHER_CUSTOMER":
+      message = `Bạn đã nhận được voucher từ quản lý cửa hàng`;
+      path = `/account-voucher`;
       break;
-    case "User_Create_Request":
-      message = `${SenderName} đã tạo yêu cầu sản phẩm`;
-      path = `/request-list?id=${data.ProductRequestID}`;
+    case "EMPLOYEE_SEND_REQUEST_PRODUCT_OWNER":
+      message = `Nhân viên ${senderName} đã gửi yêu cầu sửa chữa tới bạn`;
+      path = `/request-list`;
       break;
-    case "User_Cancel_Request":
-      message = `${SenderName} đã hủy yêu cầu sản phẩm`;
-      path = `/request-list?id=${data.ProductRequestID}`;
+    case "USER_CHAT_REQUEST":
+      message = `${senderName} đã phản hồi yêu cầu sửa chữa tới bạn`;
       break;
-    case "Creator_Accept_Request":
-      message = `${SenderName} đã chấp nhận yêu cầu sản phẩm`;
-      path = `/my-request?id=${data.ProductRequestID}`;
+    case "PRODUCT_OWNER_CHAT_REQUEST":
+      message = `Quản lý cửa hàng đã phản hồi yêu cầu sửa chữa tới bạn`;
       break;
-    case "Creator_Reject_Request":
-      message = `${SenderName} đã từ chối yêu cầu sản phẩm`;
-      path = `/my-request?id=${data.ProductRequestID}}`;
+    case 'PRODUCT_OWNER_REJECT_REQUEST':
+      message = 'Quản lý cửa hàng đã từ chối yêu cầu sửa chữa của bạn';
       break;
-    case "Creator_Complete_Request":
-      message = `${SenderName} đã hoàn thành yêu cầu. Thanh toán ngay`;
-      path = `/my-request?id=${data.ProductRequestID}`;
+    case 'PRODUCT_OWNER_ACCEPT_REQUEST':
+      message = 'Quản lý cửa hàng đã xác nhận giá dịch vụ sửa chữa. Bạn vui lòng vào xác nhận lại.';
       break;
-    case "Remind_Auction":
-      message = `Nhắc nhở về cuộc đấu giá: ${data.Title}`;
-      path = `/auction-detail/${data.AuctionItemID}`;
+    case 'AMIN_ASSIGN_TASK':
+      message = "Quản lý của hàng vừa giao cho bạn nhiệm vụ sửa";
       break;
-    case "End_Auction":
-      message = `Cuộc đấu giá đã kết thúc: ${data.Title}`;
-      path = `/auction-list`;
+    case "DONE_REQUEST":
+      message = "Đã hoàn thành xong hết các task sửa sản phẩm";
       break;
-    case "Win_Auction":
-      message = `Bạn đã thắng cuộc đấu giá: ${data.Title}`;
-      path = `/auction-result`;
+    case "DONE_REQUEST_USER":
+      message = "Đã hoàn thành xong task. Vui lòng thanh toán để nhận hàng";
       break;
-    case "Done_Auction":
-      message = `Cuộc đấu giá đã hoàn tất: ${data.Title}`;
-      path = `/auction-list`;
-      break;
-    case "User_Create_Auction":
-      message = `${SenderName} đã tạo cuộc đấu giá: ${data.Title}`;
-      path = "/app/auction";
-      break;
-    case "User_Update_Auction":
-      message = `${SenderName} đã cập nhật cuộc đấu giá: ${data.Title}`;
-      path = `/auction/${data.AuctionItemID}`;
-      break;
-    case "Staff_Admin_Confirm_Auction":
-      message = ` Cuộc đấu giá: ${data.Title} đã được xác nhận`;
-      path = `/my-auction`;
-      break;
-    case "User_Place_Bid_Auction":
-      message = `${SenderName} đã đặt  trong cuộc đấu giá: ${data.Title}`;
-      path = `/auction/${data.AuctionItemID}`;
-      break;
-    case "System_Remove_Noti_Auction":
-      message = `Hệ thống đã xóa thông báo về cuộc đấu giá: ${data.Title}`;
-      path = `/auction/${data.AuctionItemID}`;
-      break;
-    case "Staff_Admin_Confirm_Reject":
-      message = `Cuộc đấu giá bị từ chối: ${data.Title}`;
-      path = `/my-auction`;
-      break;
-    case "Staff_Admin_Approve_Product":
-      message = `Sản phẩm đã được duyệt`;
-      path = `/my-product`;
-      break;
-    case "Staff_Admin_Reject_Product":
-      message = `Sản phẩm đã  bị từ chối`;
-      path = `/my-product`;
-      break;
-    case "Customer_Review_Work":
-      message = `Sản phẩm yêu cầu của bạn đã có bản xem trước`;
-      path = `/my-request?id=${data.ProductRequestID}`;
-      break;
-    case "Customer_Reject_Work":
-      message = `Khách hàng đã từ chối bản xem trước của bạn`;
-      path = `/request-list?id=${data.ProductRequestID}`;
-      break;
-    case "Customer_SendMessage_Request":
-      message = `Khách hàng đã phản hổi về sản phẩm`;
-      path = `/request-list?id=${data.ProductRequestID}`;
-      break;
-    case "Creator_SendMessage_Request":
-      message = `Người sáng tạo đã phản hổi về sản phẩm`;
-      path = `/my-request?id=${data.ProductRequestID}`;
-      break;
-    case "Win_Auction":
-      message = `Bạn đã thắng cuộc đấu giá`;
-      path = `/auction-list`;
-      break;
-    case "Fail_Auction":
-      message = `Bạn đã thua cuộc đấu giá`;
-      path = `/auction-list`;
-      break;
-    case "Remind_Pay_Auction":
-      message = `Bạn cần thanh toán sản phẩm đấu giá trong vòng 24h kế từ thời điểm kết thúc`;
-      path = `/auction-result`;
-      break;
-
     default:
       message = "Thông báo không xác định";
       path = "/";
@@ -287,6 +215,15 @@ export enum StatusOrder {
   PROCESSING = "PROCESSING",
 }
 
+export enum RequestStatus {
+  PENDING = "PENDING",
+  APPROVED = "APPROVED", // Đã phê duyệt
+  REJECTED = "REJECTED", // Từ chối
+  IN_PROGRESS = "IN_PROGRESS", // Đang tiến hành
+  COMPLETED = "COMPLETED", // Hoàn thành
+  CANCELLED = "CANCELLED"
+}
+
 export const StatusOrderDetails = {
   [StatusOrder.PENDING]: { text: "Chờ xử lý", color: "" },
   [StatusOrder.SHIPPED]: { text: "Đã gửi hàng", color: "blue" },
@@ -313,38 +250,37 @@ export const RequestProductStatus = {
 };
 
 export const RequestProductStatusDetails = {
-  [RequestProductStatus.Pending]: { text: "Chờ xử lý", color: "" },
-  [RequestProductStatus.Approved]: { text: "Đã duyệt", color: "blue" },
-  [RequestProductStatus.Done]: { text: "Hoàn thành", color: "blue" },
-  [RequestProductStatus.Reject]: { text: "Từ chối", color: "red" },
-  [RequestProductStatus.Cancel]: { text: "Hủy bỏ", color: "gray" },
+  [RequestStatus.PENDING]: { text: "Chờ xử lý", color: "" },
+  [RequestStatus.APPROVED]: { text: "Đã duyệt", color: "blue" },
+  [RequestStatus.COMPLETED]: { text: "Hoàn thành", color: "blue" },
+  [RequestStatus.REJECTED]: { text: "Từ chối", color: "red" },
+  [RequestStatus.IN_PROGRESS]: { text: "Đang tiến hành", color: "gray" },
+  [RequestStatus.CANCELLED]: { text: "Hủy yêu cầu", color: "red" }
 };
 
-export const getRequestProductStatusText = (status: any) => {
-  status = Number(status);
+export const getRequestProductStatusText = (status: RequestStatus) => {
   return RequestProductStatusDetails[status]?.text || "Unknown status";
 };
 
-export const getRequestProductStatusColor = (status: any) => {
+export const getRequestProductStatusColor = (status: RequestStatus) => {
   return RequestProductStatusDetails[status]?.color;
 };
 
 export const WorkStatus = {
-  InProgress: 1, // đang tiến hành
-  Review: 2, // đánh giá
-  Done: 3, // đã hoàn thành
-  Reject: 4, // từ chối
+  InProgress: "PENDING", // đang tiến hành
+  Review: "IN_PROGRESS", // đánh giá
+  Done: "COMPLETED", // đã hoàn thành
+  Reject: "CANCELLED", // từ chối
 };
 
 export const WorkStatusDetail = {
   [WorkStatus.InProgress]: { text: "Đang tiến hành", color: "" },
-  [WorkStatus.Review]: { text: "Đã có sản phẩm", color: "blue" },
+  [WorkStatus.Review]: { text: "Đang tiến hành", color: "blue" },
   [WorkStatus.Done]: { text: "Đã hoàn thành", color: "blue" },
-  [WorkStatus.Reject]: { text: "Từ chối", color: "red" },
+  [WorkStatus.Reject]: { text: "Đã hủy", color: "red" },
 };
 
 export const getWorkStatusText = (status: any) => {
-  status = Number(status);
   return WorkStatusDetail[status]?.text || "Unknown status";
 };
 

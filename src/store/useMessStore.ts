@@ -13,14 +13,14 @@ const useMessageStore = create(
         })),
         addMessageFromNoty: (message: any) => {
           const state:any = get();
-          const data = JSON.parse(message?.RawData || {});
+          const data = JSON.parse(message?.rawData || {});
           if (
-            message.Type == "Customer_SendMessage_Request" ||
-            message.Type == "Creator_SendMessage_Request"
+            message.type == "PRODUCT_OWNER_CHAT_REQUEST" ||
+            message.type == "USER_CHAT_REQUEST"
           ) {
-            if (data.ProductRequestID == state?.idRoom) {
+            if (data.requestId == state?.idRoom) {
               set((state: any) => ({
-                messages: [...state.messages, { ...message, Content: data.Message }],
+                messages: [...state.messages, { ...message, message: data.message }],
               }));
             }
           }
@@ -39,6 +39,16 @@ const useMessageStore = create(
             (message: any) => message.messageID !== messageID
           ),
         })),
+        markAsRead: (roomId: string) =>
+          set((state: any) => ({
+            unreadCounts: { ...state.unreadCounts, [roomId]: 0 },
+          })),
+  
+        // Cập nhật số lượng tin nhắn chưa đọc
+        updateUnreadCount: (count: number) =>
+          set((state: any) => ({
+            unreadCounts: { ...state.unreadCounts },
+          })), 
     }),
     {
       name: "messages-storage",

@@ -8,7 +8,7 @@ const useNotyStore = create(
       addNotification: (notification: any) =>
         set((state: any) => ({
           notifications: !state.notifications.find(
-            (i: any) => i.NotificationID == notification.NotificationID
+            (i: any) => i.id == notification.id
           )
             ? [notification, ...state.notifications]
             : [...state.notifications],

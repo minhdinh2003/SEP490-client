@@ -3,8 +3,10 @@ import WithHydration from "@/HOC/withHydration";
 import http from "@/http/http";
 import useAuthStore from "@/store/useAuthStore";
 import useMessageStore from "@/store/useMessStore";
-import { dateFormat3 } from "@/utils/helpers";
 import React, { useEffect, useState } from "react";
+import ChatService from "@/http/chatService";
+import { IPagingParam } from "@/contains/paging";
+import { ServiceResponse } from "@/type/service.response";
 
 const ModalMessage = ({
   isOpen,
@@ -19,8 +21,7 @@ const ModalMessage = ({
   let listMessage = messStore?.messages || [];
   listMessage = listMessage.map((i: any) => ({
     ...i,
-    isMine:
-      i.isMine !== true ? i.SenderUserID == userStore?.user?.UserID : true,
+    isMine: i.isMine !== true ? i.senderId == userStore?.user?.id : true,
   }));
   useEffect(() => {
     if (idRequest) {
@@ -30,16 +31,16 @@ const ModalMessage = ({
   const handleSendMessage = async () => {
     if (newMessage.trim()) {
       try {
-        await http.post("ProductRequest/message", {
-          ProductRequestID: idRequest,
-          Content: newMessage,
+        await ChatService.post("", {
+          requestId: idRequest,
+          message: newMessage,
+          senderId: userStore?.user?.id,
         });
-         
-        messStore?.addMessage({
-            Content:newMessage,
-            isMine:true,
 
-        })
+        messStore?.addMessage({
+          message: newMessage,
+          isMine: true,
+        });
         setNewMessage("");
       } catch (error) {}
     }
@@ -47,22 +48,36 @@ const ModalMessage = ({
 
   const getMess = async () => {
     try {
-      const res = await http.post("ProductRequest/message/paging", {
-        PageSize: 1000,
-        PageNumber: 1,
-        Filter: `ProductRequestID = ${idRequest}`,
-        SortOrder: "",
-        SearchKey: "",
-      });
-      messStore?.setMessages(res.payload.Data.Data);
+      const param: IPagingParam = {
+        pageSize: 1000,
+        pageNumber: 1,
+        conditions: [
+          {
+            key: "requestId",
+            condition: "equal",
+            value: idRequest,
+          },
+          {
+            key: "isNormal",
+            condition: "equal",
+            value: false,
+          }
+        ],
+        searchKey: "",
+        searchFields: [],
+        includeReferences: {
+          sender: true,
+        },
+      };
+      const res = await ChatService.getPaging<ServiceResponse>(param);
+      messStore?.setMessages(res.data.data);
     } catch (error) {}
   };
   useEffect(() => {
     const chatContainer: any = document.getElementById("request-container");
-    if(chatContainer){
+    if (chatContainer) {
       chatContainer.scrollTop = chatContainer.scrollHeight;
     }
-    
   }, [listMessage?.length]);
   if (!isOpen) return null;
 
@@ -91,7 +106,7 @@ const ModalMessage = ({
                     : "bg-gray-200 text-black"
                 }`}
               >
-                <p>{message.Content}</p>
+                <p>{message.message}</p>
               </div>
               {/* <p className="text-xs text-gray-500">{dateFormat3(message.CreatedDate)}</p> */}
             </div>
@@ -102,6 +117,11 @@ const ModalMessage = ({
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSendMessage();
+              }
+            }}
             className="flex-1 p-2 border border-gray-300 rounded-l-lg focus:outline-none"
             placeholder="Nhập tin nhắn..."
           />
