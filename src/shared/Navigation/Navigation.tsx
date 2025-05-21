@@ -10,7 +10,6 @@ function Navigation() {
     <ul className="nc-Navigation flex items-cente">
       {NAVIGATION_DEMO_2.filter((i:any) => {
         if(i.hide && !IsCreator){
-
           return false;
         }
      return true;

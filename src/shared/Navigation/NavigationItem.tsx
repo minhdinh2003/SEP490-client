@@ -17,7 +17,6 @@ export interface NavItemType {
   isNew?: boolean;
   hide?:boolean;
   role?: any;
-
 }
 
 export interface NavigationItemProps {

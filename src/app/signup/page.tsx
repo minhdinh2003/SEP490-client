@@ -1,3 +1,4 @@
+
 "use client";
 import http from "@/http/http";
 import { Alert } from "@/shared/Alert/Alert";
@@ -178,3 +179,4 @@ const PageSignUp = () => {
 };
 
 export default PageSignUp;
+
