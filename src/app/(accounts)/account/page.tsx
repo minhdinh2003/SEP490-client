@@ -60,6 +60,7 @@ const AccountPage = () => {
 
   // Change AVATAR
   const onChangeAvatar = async (e: any) => {
+    debugger
     const files = e.target.files;
     if (!files) return;
     const file = files[0];
@@ -81,7 +82,7 @@ const AccountPage = () => {
             {/* AVATAR */}
             <div className="relative flex overflow-hidden rounded-full">
               <Image
-                src={dataUser?.profilePictureUR || "/avt.svg"}
+                src={dataUser?.profilePictureURL || "/avt.svg"}
                 alt=""
                 width={128}
                 height={128}

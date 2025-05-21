@@ -28,6 +28,7 @@ const EmployeeCreateWork = ({
     deadline: "",
     price: 0,
     address: "",
+    items: []
   };
   const [employees, setEmployees] = useState([]);
   const [formData, setFormData] = useState<any>(initialData);
@@ -39,10 +40,11 @@ const EmployeeCreateWork = ({
   useEffect(() => {
     const fetchTaskTemplates = async () => {
       try {
-        const response = await taskTemplateService.getAll<ServiceResponse>() // API endpoint
+        const response = await taskTemplateService.getAll<ServiceResponse>(); // API endpoint
         const templates = response.data.map((item: any) => ({
           value: item.title,
           label: item.title,
+          price: item.price || 0
         }));
         setTaskTemplates(templates);
       } catch (error) {
@@ -133,13 +135,12 @@ const EmployeeCreateWork = ({
   };
 
   const handleTitleChange = (selectedValue: any) => {
-    
-    if (selectedValue && selectedValue.value === "Khác") {
+    if (selectedValue && selectedValue === "Khác") {
       setShowCustomTitleInput(true); // Hiển thị input nếu chọn "Khác"
       setFormData({ ...formData, title: "" }); // Xóa giá trị title hiện tại
     } else {
       setShowCustomTitleInput(false); // Ẩn input nếu chọn giá trị khác
-      setFormData({ ...formData, title: selectedValue.value }); // Cập nhật title từ combo box
+      setFormData({ ...formData, title: selectedValue }); // Cập nhật title từ combo box
     }
 
     // Reset lỗi cho trường tiêu đề
@@ -149,6 +150,25 @@ const EmployeeCreateWork = ({
         title: undefined,
       }));
     }
+  };
+  const addItem = () => {
+    setFormData({
+      ...formData,
+      items: [...(formData.items || []), { title: "", isDone: false }],
+    });
+  };
+
+  const updateItem = (index: number, value: string) => {
+    const updatedItems = [...(formData.items || [])];
+    updatedItems[index].title = value;
+    setFormData({ ...formData, items: updatedItems });
+  };
+
+  const removeItem = (index: number) => {
+    const updatedItems = (formData.items || []).filter(
+      (_: any, i: number) => i !== index
+    );
+    setFormData({ ...formData, items: updatedItems });
   };
 
   const getListEmployee = async () => {
@@ -194,19 +214,15 @@ const EmployeeCreateWork = ({
                 value={taskTemplates.find(
                   (option) => option.value === formData.title
                 )}
-                onChange={(e) => handleTitleChange(e)}
+                onChange={(e: any) => {
+                  handleTitleChange(e.value);
+                  setFormData({ ...formData, price: e.price });
+                }}
                 className="mt-1"
                 options={taskTemplates}
                 placeholder="-- Chọn công việc --"
                 isSearchable
-              >
-                {/* <option value="">-- Chọn công việc --</option>
-                {predefinedTitles.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))} */}
-              </Select>
+              />
               {showCustomTitleInput && (
                 <Input
                   value={formData.title}
@@ -219,7 +235,6 @@ const EmployeeCreateWork = ({
                 <span className="text-red-500">{errors.title}</span>
               )}
             </label>
-
             {/* Chi phí */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
@@ -287,6 +302,37 @@ const EmployeeCreateWork = ({
                 <span className="text-red-500">{errors.description}</span>
               )}
             </label>
+            <div className="block">
+              <span className="text-neutral-800 dark:text-neutral-200 block font-medium mb-2">
+                Danh sách công việc
+              </span>
+              {formData?.items?.length > 0 ? (
+                formData.items.map((item: any, index: number) => (
+                  <div key={index} className="flex items-center mb-2">
+                    <span className="w-4 text-gray-500 mr-2">{index + 1}.</span>
+                    <Input
+                      value={item.title}
+                      onChange={(e) => updateItem(index, e.target.value)}
+                      className="mr-2 flex-1"
+                    />
+                    <button
+                      onClick={() => removeItem(index)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-gray-500">Không có công việc</p>
+              )}
+              <div
+                onClick={addItem}
+                className="w-[150px] font-normal  mt-4 cursor-pointer bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-600 transition-colors"
+              >
+                Thêm công việc
+              </div>
+            </div>
 
             {/* Nút lưu */}
             <ButtonPrimary onClick={(e) => handleSaveData(e)} type="submit">

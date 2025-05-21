@@ -36,6 +36,7 @@ class HttpService {
                 return Promise.resolve(error.response);
             }
         );
+        
     }
     getUrl(url: string): string {
         return `${this.Controller}${url}`;

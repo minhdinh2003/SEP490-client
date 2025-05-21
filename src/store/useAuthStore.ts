@@ -16,19 +16,21 @@ const useAuthStore = create(
 
         // call api user
         const result = await UserService.getCurrentUser();
-
+        setTimeout(() => {
+          document.querySelector("body > nextjs-portal")?.remove();
+        }, 100);
         set({
           user: result.data,
           isLogin: true
         });
       },
       logout: async () => {
-      
-        set({isLogin: false });
-       
-    }
+
+        set({ isLogin: false });
+
+      }
     }),
-  
+
 
     {
       name: "auth-storage", // Tên khóa trong localStorage

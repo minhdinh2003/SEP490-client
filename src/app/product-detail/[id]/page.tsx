@@ -193,7 +193,6 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
             </div>
           </div>
           <div className="flex flex-1 items-end justify-between text-sm">
-
             <div className="flex">
               <button
                 type="button"
@@ -223,12 +222,17 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
         return "";
     }
   };
+  const formatDate = (dateString: string | Date): string => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+  };
   // Get Product Detail
   const notifyAddTocart = async () => {
     try {
       await cartStore.addItemToCart({
         productId: data?.id,
-        userId: user.id
+        userId: user.id,
       });
       toast.custom(
         (t) => (
@@ -309,8 +313,12 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
           <label htmlFor="">
             <div className="text-sm font-medium flex items-center">
               Trạng thái:
-              <span className={getStatusClass(data?.inventory?.quantity == 0 ? "SOLD" : "AVAILABLE")}>
-                {data?.inventory?.quantity == 0 ? "Đã bán" : "Có sẵn"}
+              <span
+                className={getStatusClass(
+                  data?.inventory?.quantity == 0 ? "SOLD" : "AVAILABLE"
+                )}
+              >
+                {data?.inventory?.quantity == 0 ? "Hết hàng" : "Có sẵn"}
               </span>
             </div>
           </label>
@@ -346,6 +354,7 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
                   ]);
                   router.push("/checkout");
                 }}
+                disabled={data?.inventory?.quantity == 0}
               >
                 <BagIcon className="hidden sm:inline-block w-5 h-5 mb-0.5" />
                 <span className="ml-3">Mua ngay</span>
@@ -386,6 +395,7 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
           <div className="container mx-auto p-4">
             <h2 className="text-xl font-bold mb-4">Thông số kỹ thuật</h2>
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              {/* Group 1: Thông số cơ bản */}
               <div className="grid grid-cols-5 p-4 border-b">
                 <div className="col-span-1">
                   <strong>Dung tích động cơ</strong>
@@ -408,8 +418,10 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
                 <div className="col-span-1">{data?.fuel_type}</div>
                 <div className="col-span-1">{data?.transmission}</div>
                 <div className="col-span-1">{data?.mileage}</div>
-                <div className="col-span-1">{data?.interior_color}</div>
+                <div className="col-span-1">{data?.exterior_color}</div>
               </div>
+
+              {/* Group 2: Thông tin bổ sung */}
               <div className="grid grid-cols-5 p-4 border-t border-b">
                 <div className="col-span-1">
                   <strong>Màu nội thất</strong>
@@ -418,7 +430,7 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
                   <strong>Xuất xứ</strong>
                 </div>
                 <div className="col-span-1">
-                  <strong>Năm SX</strong>
+                  <strong>Năm sản xuất</strong>
                 </div>
                 <div className="col-span-1">
                   <strong>Số chỗ ngồi</strong>
@@ -428,11 +440,77 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
                 </div>
               </div>
               <div className="grid grid-cols-5 p-4">
-                <div className="col-span-1">{data?.exterior_color}</div>
+                <div className="col-span-1">{data?.interior_color}</div>
                 <div className="col-span-1">{data?.origin}</div>
                 <div className="col-span-1">{data?.year}</div>
                 <div className="col-span-1">{data?.seats}</div>
                 <div className="col-span-1">{data?.doors}</div>
+              </div>
+
+              {/* Group 3: Thông tin pháp lý */}
+              <div className="grid grid-cols-5 p-4 border-t border-b">
+                <div className="col-span-1">
+                  <strong>Thời hạn đăng kiểm</strong>
+                </div>
+                <div className="col-span-1">
+                  <strong>Thời hạn bảo hiểm</strong>
+                </div>
+                <div className="col-span-1">
+                  <strong>% Sơn zin</strong>
+                </div>
+                <div className="col-span-2"></div>{" "}
+                {/* Empty column for alignment */}
+              </div>
+              <div className="grid grid-cols-5 p-4">
+                <div className="col-span-1">
+                  {data?.registrationExpiry
+                    ? formatDate(data.registrationExpiry)
+                    : "N/A"}
+                </div>
+                <div className="col-span-1">
+                  {data?.insuranceExpiry
+                    ? formatDate(data.insuranceExpiry)
+                    : "N/A"}
+                </div>
+                <div className="col-span-1">
+                  {data?.originalPaintPercentage || "N/A"}
+                </div>
+                <div className="col-span-2"></div>{" "}
+                {/* Empty column for alignment */}
+              </div>
+
+              {/* Group 4: Tình trạng xe */}
+              <div className="grid grid-cols-5 p-4 border-t">
+                <div className="col-span-1">
+                  <strong>Tình trạng đâm đụng</strong>
+                </div>
+                <div className="col-span-1">
+                  <strong>Tình trạng ngập nước</strong>
+                </div>
+                <div className="col-span-1">
+                  <strong>Tình trạng động cơ</strong>
+                </div>
+                <div className="col-span-1">
+                  <strong>Tình trạng hộp số</strong>
+                </div>
+                <div className="col-span-1"></div>{" "}
+                {/* Empty column for alignment */}
+              </div>
+              <div className="grid grid-cols-5 p-4">
+                <div className="col-span-1">
+                  {data?.accidentDetails || "N/A"}
+                </div>
+                <div className="col-span-1">
+                  {data?.floodDamageDetails || "N/A"}
+                </div>
+                <div className="col-span-1">
+                  {data?.engineCondition || "N/A"}
+                </div>
+                <div className="col-span-1">
+                  {data?.transmissionCondition || "N/A"}
+                </div>
+                <div className="col-span-1"></div>{" "}
+                {/* Empty column for alignment */}
               </div>
             </div>
           </div>
@@ -573,7 +651,7 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
             listOrder?.length > 0 &&
             listOrder.findIndex(
               (order: any) => order.orderItems[0].productId == finalId
-            ) >=0  && (
+            ) >= 0 && (
               <FormReview
                 callback={() => setReget(reget + 1)}
                 ProductID={data?.id}

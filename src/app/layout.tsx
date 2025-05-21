@@ -16,24 +16,20 @@ import { io } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
 import CommonClient from "./CommonClient";
 import "./globals.scss";
-import { Roboto } from "next/font/google";
+import { Roboto, Roboto_Serif } from "next/font/google";
 import UserService from "@/http/userService";
 import { IPagingParam } from "@/contains/paging";
-const roboto = Roboto({
+import CustomerChat from "@/components/CustomerChat"; // Import component chat
+import OwnerChat from "@/components/OwnerChat";
+import { eventEmitter } from "@/utils/eventEmitter";
+
+const roboto = Roboto_Serif({
   weight: ["400", "700", "500"],
-  // style: ['normal', 'italic'],
   subsets: ["vietnamese"],
-  // display: 'swap',
 });
 
 export let socket: any;
 export const connectionID = uuidv4();
-
-// const poppins = Poppins({
-//   subsets: ["latin"],
-//   display: "swap",
-//   weight: ["300", "400", "500", "600", "700"],
-// });
 
 function RootLayout({
   children,
@@ -57,7 +53,9 @@ function RootLayout({
       userStore.getInfoUser();
       getListCart();
     }
+    
   }, []);
+
   useEffect(() => {
     const param: IPagingParam = {
       pageSize: 1000,
@@ -79,10 +77,10 @@ function RootLayout({
       })
       .catch(() => {});
   }, [user]);
+
   const pathname = usePathname();
   const listNotFootter = ["/auction-detail"];
   const isNotFooter = listNotFootter.some((path) => pathname.startsWith(path));
-  // Noti
 
   const connectSocket = () => {
     const userID = user.id;
@@ -107,9 +105,9 @@ function RootLayout({
           console.log("Connected to server");
           socket.emit("register", userID, connectionID);
         });
-        // nhận thông báo từ ng dùng
+
+        // Nhận thông báo từ người dùng
         socket.on("message", (message: any) => {
-          //NotificationID
           const data = JSON.parse(message?.rawData || {});
           if (
             message.type == "PRODUCT_OWNER_CHAT_REQUEST" ||
@@ -120,12 +118,13 @@ function RootLayout({
               message: data.message,
             });
           }
+          if (message.type == "USER_CHAT_WITH_OWNER") {
+            eventEmitter.emit("newChatUser", data);
+          } else if (message.type == "OWNER_CHAT_WITH_USER") {
+            eventEmitter.emit("newChatOwner", data);
+          }
 
-          if (
-            !notifications.find(
-              (i: any) => i.id == message.id
-            )
-          ) {
+          if (!notifications.find((i: any) => i.id == message.id)) {
             addNotification(message);
           }
         });
@@ -134,6 +133,7 @@ function RootLayout({
         console.error("Error registering user:", error);
       });
   };
+
   useEffect(() => {
     if (user && user.id) {
       connectSocket();
@@ -142,6 +142,9 @@ function RootLayout({
       socket?.disconnect();
     };
   }, [user]);
+
+
+  const isOwner = user?.role == "OWNER";
   return (
     <html lang="en" dir="" className={roboto.className}>
       <body
@@ -151,6 +154,11 @@ function RootLayout({
         <SiteHeader />
         <ToastProvider>{children}</ToastProvider>
         <CommonClient />
+
+        {/* Thêm component chat */}
+        {!isOwner && <CustomerChat />}
+        {isOwner && <OwnerChat />}
+
         {!isNotFooter && <Footer />}
       </body>
     </html>
@@ -158,4 +166,3 @@ function RootLayout({
 }
 
 export default RootLayout;
-

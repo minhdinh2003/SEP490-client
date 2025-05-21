@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { IoMdChatbubbles } from "react-icons/io"; // Biểu tượng chat
 import { BsFillCircleFill } from "react-icons/bs"; // Biểu tượng tròn đỏ để hiển thị số lượng tin nhắn chưa đọc
 import axios from "axios";
@@ -6,7 +6,7 @@ import { IPagingParam } from "@/contains/paging";
 import chatService from "@/http/chatService";
 import { ServiceResponse } from "@/type/service.response";
 import useAuthStore from "@/store/useAuthStore";
-import { create } from "domain";
+import { eventEmitter } from "@/utils/eventEmitter";
 
 const CustomerChat = () => {
   const [isOpen, setIsOpen] = useState(false); // Trạng thái mở/đóng box chat
@@ -14,6 +14,7 @@ const CustomerChat = () => {
   const [unreadCount, setUnreadCount] = useState(0); // Số lượng tin nhắn chưa đọc
   const [inputMessage, setInputMessage] = useState(""); // Nội dung tin nhắn nhập vào
   const userStorage: any = useAuthStore();
+  const messagesEndRef = useRef<HTMLDivElement | null>(null); // Ref để cuộn xuống
 
   // Fetch tin nhắn từ server
   const fetchMessages = async () => {
@@ -27,17 +28,16 @@ const CustomerChat = () => {
             condition: "raw",
             value: {
               AND: [
-                {isNormal: true},
+                { isNormal: true },
                 {
                   OR: [
                     { senderId: userStorage?.user?.id },
                     { receiveId: userStorage?.user?.id },
-                  ]
-                }
-              ]
+                  ],
+                },
+              ],
             },
           },
-
         ],
         searchKey: "",
         searchFields: [],
@@ -62,7 +62,9 @@ const CustomerChat = () => {
   // Mark all messages as read
   const markAsRead = async () => {
     try {
-      await chatService.post("/markAsRead", { receiveId: userStorage?.user?.id }); // Đánh dấu tất cả tin nhắn là đã đọc
+      await chatService.post("/markAsRead", {
+        receiveId: userStorage?.user?.id,
+      }); // Đánh dấu tất cả tin nhắn là đã đọc
       setUnreadCount(0); // Reset số lượng tin nhắn chưa đọc
     } catch (error) {
       console.error("Error marking messages as read:", error);
@@ -75,23 +77,25 @@ const CustomerChat = () => {
 
     try {
       const newMessage = {
-        // receiveId: userStorage?.user?.id, // Người nhận tin nhắn
         message: inputMessage, // Nội dung tin nhắn
         isRead: false, // Tin nhắn chưa đọc
         senderId: userStorage?.user?.id,
         requestId: -1,
         isNormal: true,
-        receiveId: -1
+        receiveId: -1,
       };
 
       // Gửi tin nhắn lên server
       await chatService.post("/sendMessageToOwner", newMessage);
 
       // Cập nhật danh sách tin nhắn trong state
-      setMessages((prev) => [...prev, {
-        ...newMessage,
-        createdAt: new Date().toISOString(), // Thời gian gửi tin nhắn
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          ...newMessage,
+          createdAt: new Date().toISOString(), // Thời gian gửi tin nhắn
+        },
+      ]);
 
       // Xóa nội dung trong ô nhập liệu
       setInputMessage("");
@@ -105,6 +109,35 @@ const CustomerChat = () => {
     fetchMessages();
   }, []);
 
+  // Cuộn xuống dưới khi có tin nhắn mới hoặc mở box chat
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isOpen]);
+
+  // Đóng chat khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const chatBox = document.querySelector(".chat-box");
+      const chatIcon = document.querySelector(".chat-icon");
+
+      if (
+        isOpen &&
+        chatBox &&
+        !chatBox.contains(event.target as Node) &&
+        !(chatIcon && chatIcon.contains(event.target as Node))
+      ) {
+        setIsOpen(false); // Đóng chat nếu click ra ngoài
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
   // Xử lý khi click vào biểu tượng chat
   const handleChatIconClick = () => {
     setIsOpen(!isOpen); // Toggle trạng thái mở/đóng box chat
@@ -112,12 +145,40 @@ const CustomerChat = () => {
       markAsRead(); // Đánh dấu tin nhắn là đã đọc khi mở box chat
     }
   };
+  useEffect(() => {
+    const handleMessage = async (data: any) => {
+      const senderId = data.senderId;
+
+      // Fetch tin nhắn mới cho người gửi (nếu cần)
+      try {
+        await fetchMessages(); // Gọi fetchMessages mà không cần tham số senderId
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      }
+
+      // Cập nhật số lượng tin nhắn chưa đọc
+      setUnreadCount((prevCount) => prevCount + 1);
+
+      // Scroll xuống cuối sau khi nhận tin nhắn mới
+      setTimeout(() => {
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 100); // Delay nhẹ để đảm bảo DOM đã được cập nhật
+    };
+
+    eventEmitter.on("newChatOwner", handleMessage);
+
+    return () => {
+      eventEmitter.off("newChatOwner", handleMessage);
+    };
+  }, []);
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
       {/* Chat Icon */}
       <div
-        className="relative cursor-pointer bg-white rounded-full p-3 shadow-lg hover:bg-gray-100 transition-all"
+        className="relative cursor-pointer bg-white rounded-full p-3 shadow-lg hover:bg-gray-100 transition-all chat-icon"
         onClick={handleChatIconClick}
       >
         <IoMdChatbubbles className="text-3xl text-blue-500" />
@@ -130,10 +191,10 @@ const CustomerChat = () => {
 
       {/* Box Chat */}
       {isOpen && (
-        <div className="fixed bottom-20 right-4 w-96 bg-white rounded-lg shadow-xl overflow-hidden">
+        <div className="fixed bottom-20 right-4 w-96 bg-white rounded-lg shadow-xl overflow-hidden chat-box">
           {/* Header */}
           <div className="bg-blue-500 text-white px-4 py-3 flex justify-between items-center">
-            <span>Chat</span>
+            <span>Hỗ trợ mua sản phẩm</span>
             <button
               className="text-white hover:text-gray-200"
               onClick={() => setIsOpen(false)}
@@ -149,7 +210,9 @@ const CustomerChat = () => {
                 <div
                   key={index}
                   className={`mb-4 ${
-                    msg.senderId === userStorage?.user?.id ? "text-right" : "text-left"
+                    msg.senderId === userStorage?.user?.id
+                      ? "text-right"
+                      : "text-left"
                   }`}
                 >
                   <div
@@ -175,6 +238,8 @@ const CustomerChat = () => {
             ) : (
               <p className="text-center text-gray-500">Không có tin nhắn</p>
             )}
+            {/* Phần tử tham chiếu để cuộn xuống */}
+            <div ref={messagesEndRef}></div>
           </div>
 
           {/* Input Field */}

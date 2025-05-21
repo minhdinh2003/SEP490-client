@@ -17,7 +17,7 @@ import { ServiceResponse } from "@/type/service.response";
 import { IPagingParam } from "@/contains/paging";
 import NcModal from "@/shared/NcModal/NcModal";
 import AddCustomer from "./AddCustomer";
-const CreateWoodenBookRequest = ({ editItem, callback = () => {} }: any) => {
+const CreateWoodenBookRequest = ({ editItem, callback = () => { } }: any) => {
   const [listImage, setListImage] = useState<any>([]);
   const userStore: any = useAuthStore();
   const handleChangeFile = async (e: any) => {
@@ -47,7 +47,7 @@ const CreateWoodenBookRequest = ({ editItem, callback = () => {} }: any) => {
   const initialData = {
     userId: "",
     description: "",
-    price: "",
+    price: "0",
     images: "",
     type: "car",
     reasonReject: "",
@@ -246,7 +246,7 @@ const CreateWoodenBookRequest = ({ editItem, callback = () => {} }: any) => {
                 <span className="text-red-500">{errors.description}</span>
               )}
             </label>
-            <label className="block">
+            {/* <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Giá thỏa thuận
               </span>
@@ -261,7 +261,7 @@ const CreateWoodenBookRequest = ({ editItem, callback = () => {} }: any) => {
               {errors.price && (
                 <span className="text-red-500">{errors.price}</span>
               )}
-            </label>
+            </label> */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Phương thức sửa chữa
@@ -278,6 +278,24 @@ const CreateWoodenBookRequest = ({ editItem, callback = () => {} }: any) => {
                 <span className="text-red-500">{errors.repairType}</span>
               )}
             </label>
+            {formData.repairType === "AT_HOME" && (
+              <label className="block">
+                <span className="text-neutral-800 dark:text-neutral-200">
+                  Địa chỉ sửa chữa
+                </span>
+                <Input
+                  value={formData.address || ""}
+                  onChange={changeData("address")}
+                  placeholder="Nhập địa chỉ sửa chữa"
+                  className="mt-1"
+                  name="address"
+                />
+                {errors.address && (
+                  <span className="text-red-500">{errors.address}</span>
+                )}
+              </label>
+            )}
+
             {/* Combobox for Type */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">

@@ -57,11 +57,6 @@ const ModalMessage = ({
             condition: "equal",
             value: idRequest,
           },
-          {
-            key: "isNormal",
-            condition: "equal",
-            value: false,
-          }
         ],
         searchKey: "",
         searchFields: [],

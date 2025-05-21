@@ -21,7 +21,8 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
     status: "PENDING",
     deadline: "",
     price: 0,
-    address: "",
+    items: [],
+    incidentalCosts: 0,
   };
   const [employees, setEmployees] = useState([]);
   const [formData, setFormData] = useState<any>(initialData);
@@ -37,11 +38,12 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
         const templates = response.data.map((item: any) => ({
           value: item.title,
           label: item.title,
+          items: item.items || [],
+          price: item.price,
         }));
         setTaskTemplates(templates);
       } catch (error) {
         console.error("Error fetching task templates:", error);
-      } finally {
       }
     };
 
@@ -62,10 +64,6 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
 
     if (!formData.title) {
       newErrors.title = "Tiêu đề là bắt buộc";
-      valid = false;
-    }
-    if (!formData.description) {
-      newErrors.description = "Mô tả là bắt buộc";
       valid = false;
     }
     if (!formData.deadline) {
@@ -99,6 +97,8 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
           deadline: new Date(body.deadline),
           assignedTo: parseInt(formData.assignedTo),
           price: parseInt(body.price),
+          items: formData.items,
+          incidentalCosts: parseInt(body.incidentalCosts),
         });
         toast.success("Tạo task thành công");
         setFormData(initialData);
@@ -120,12 +120,29 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
 
   const handleTitleChange = (selectedValue: string) => {
     if (selectedValue === "Khác") {
-      setShowCustomTitleInput(true); // Hiển thị input nếu chọn "Khác"
-      setFormData({ ...formData, title: "" }); // Xóa giá trị title hiện tại
+      setShowCustomTitleInput(true);
+      setFormData({ ...formData, title: "", items: [], price: 0 });
     } else {
-      setShowCustomTitleInput(false); // Ẩn input nếu chọn giá trị khác
-      setFormData({ ...formData, title: selectedValue }); // Cập nhật title từ combo box
+      const selectedTemplate = taskTemplates.find(
+        (template) => template.value === selectedValue
+      );
+      if (selectedTemplate) {
+        setShowCustomTitleInput(false);
+
+        setFormData({
+          ...formData,
+          title: selectedValue,
+          items: selectedTemplate.items || [],
+          price: selectedTemplate.price || 0,
+        });
+      }
     }
+  };
+
+  const handleItemChange = (index: number, isChecked: boolean) => {
+    const updatedItems = [...formData.items];
+    updatedItems[index].isDone = isChecked;
+    setFormData({ ...formData, items: updatedItems });
   };
 
   const getListEmployee = async () => {
@@ -152,6 +169,25 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
       handleErrorHttp(error?.payload);
     }
   };
+  const addItem = () => {
+    setFormData({
+      ...formData,
+      items: [...formData.items, { title: "", isDone: false }],
+    });
+  };
+
+  const updateItem = (index: number, value: string) => {
+    const updatedItems = [...formData.items];
+    updatedItems[index].title = value;
+    setFormData({ ...formData, items: updatedItems });
+  };
+
+  const removeItem = (index: number) => {
+    const updatedItems = formData.items.filter(
+      (_: any, i: number) => i !== index
+    );
+    setFormData({ ...formData, items: updatedItems });
+  };
 
   useEffect(() => {
     getListEmployee();
@@ -171,19 +207,12 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
                 value={taskTemplates.find(
                   (option) => option.value === formData.title
                 )}
-                onChange={(e) => handleTitleChange(e)}
+                onChange={(e: any) => handleTitleChange(e.value)}
                 className="mt-1"
                 options={taskTemplates}
                 placeholder="-- Chọn công việc --"
                 isSearchable
-              >
-                {/* <option value="">-- Chọn công việc --</option>
-                {predefinedTitles.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))} */}
-              </Select>
+              />
               {showCustomTitleInput && (
                 <Input
                   value={formData.title}
@@ -202,25 +231,20 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
               <span className="text-neutral-800 dark:text-neutral-200">
                 Nhân viên
               </span>
-              {/* <Select onChange={changeData("assignedTo")}>
-                <option value="">-- Chọn nhân viên --</option>
-                {employees.map((employee: any) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.fullName}
-                  </option>
-                ))}
-              </Select> */}
               <Select
                 options={employees.map((employee: any) => ({
-                  value: employee.id,
+                  value: employee.id.toString(),
                   label: employee.fullName,
                 }))}
-                value={employees.find(
-                  (employee: any) => employee.id === formData.assignedTo
-                )}
+                value={
+                  employees.find(
+                    (employee: any) => employee?.id === formData.assignedTo
+                  )
+                }
                 onChange={(selectedOption: any) => {
-                  changeData("assignedTo")({
-                    target: { value: selectedOption?.value },
+                  setFormData({
+                    ...formData,
+                    ["assignedTo"]: selectedOption?.value,
                   });
                 }}
                 placeholder="-- Chọn nhân viên --"
@@ -235,13 +259,23 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
             {/* Chi phí */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
-                Chi phí phát sinh nếu có
+                Chi phí Dịch vụ 
               </span>
               <Input
                 value={formData.price}
                 onChange={changeData("price")}
                 className="mt-1"
                 name="price"
+                type="number"
+              />
+              <span className="text-neutral-800 dark:text-neutral-200">
+                Chi phí phát sinh nếu có
+              </span>
+              <Input
+                value={formData.incidentalCosts}
+                onChange={changeData("incidentalCosts")}
+                className="mt-1"
+                name="incidentalCosts"
                 type="number"
               />
               {errors.price && (
@@ -265,7 +299,7 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
                 <span className="text-red-500">{errors.deadline}</span>
               )}
             </label>
-            <label className="block">
+            {/* <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Địa chỉ
               </span>
@@ -279,7 +313,7 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
               {errors.address && (
                 <span className="text-red-500">{errors.address}</span>
               )}
-            </label>
+            </label> */}
             {/* Mô tả */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
@@ -296,6 +330,41 @@ const CreateWork = ({ editItem, callback = () => {}, idRequest }: any) => {
                 <span className="text-red-500">{errors.description}</span>
               )}
             </label>
+
+            {/* Hiển thị danh sách items */}
+
+            {/* Hiển thị danh sách items */}
+            <div className="block">
+              <span className="text-neutral-800 dark:text-neutral-200 block font-medium mb-2">
+                Danh sách công việc
+              </span>
+              {formData.items.length > 0 ? (
+                formData.items.map((item: any, index: number) => (
+                  <div key={index} className="flex items-center mb-2">
+                    <span className="w-4 text-gray-500 mr-2">{index + 1}.</span>
+                    <Input
+                      value={item.title}
+                      onChange={(e) => updateItem(index, e.target.value)}
+                      className="mr-2 flex-1"
+                    />
+                    <button
+                      onClick={() => removeItem(index)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-gray-500">Không có công việc</p>
+              )}
+              <div
+                onClick={addItem}
+                className="w-[150px] font-normal  mt-4 cursor-pointer bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-600 transition-colors"
+              >
+                Thêm công việc
+              </div>
+            </div>
 
             {/* Nút lưu */}
             <ButtonPrimary onClick={(e) => handleSaveData(e)} type="submit">

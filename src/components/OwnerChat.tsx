@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { IoMdChatbubbles } from "react-icons/io";
 import { IPagingParam } from "@/contains/paging";
 import chatService from "@/http/chatService";
 import { ServiceResponse } from "@/type/service.response";
 import useAuthStore from "@/store/useAuthStore";
+import { eventEmitter } from "@/utils/eventEmitter";
 
 const OwnerChat = () => {
   const [isOpen, setIsOpen] = useState(false); // Trạng thái mở/đóng box chat
@@ -14,102 +15,130 @@ const OwnerChat = () => {
   const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>(
     {}
   );
+  const chatRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (chatRef.current && !chatRef.current.contains(event.target as Node)) {
+        setIsOpen(false); // Ẩn chat interface
+      }
+    };
+
+    // Thêm event listener khi mở chat
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    // Cleanup listener khi component unmount hoặc khi đóng chat
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch danh sách khách hàng đã chat
   const fetchCustomers = async () => {
-    try {
-      const param: IPagingParam = {
-        pageSize: 1000,
-        pageNumber: 1,
-        conditions: [],
-        searchKey: "",
-        searchFields: [],
-        includeReferences: {
-          sender: true,
-        },
-      };
-      const res = await chatService.getPaging<ServiceResponse>(param);
-      const data = res?.data.data || [];
+  try {
+    const param: IPagingParam = {
+      pageSize: 1000,
+      pageNumber: 1,
+      conditions: [],
+      searchKey: "",
+      searchFields: [],
+      includeReferences: {
+        sender: true,
+      },
+    };
+    const res = await chatService.getPaging<ServiceResponse>(param);
+    // Lọc chỉ lấy chat có requestId === -1
+    const data = (res?.data.data || []).filter((msg: any) => msg.requestId === -1);
 
-      // Nhóm tin nhắn theo customerId
-      const groupedByCustomer = data.reduce((acc: any, msg: any) => {
-        if (!acc[msg.receiveId]) {
-          acc[msg.receiveId] = [];
-        }
+    // Nhóm tin nhắn theo customerId
+    const groupedByCustomer = data.reduce((acc: { [key: string]: any[] }, msg: any) => {
+      const userId = userStorage?.user?.id;
+
+      if (msg.receiveId !== userId) {
+        acc[msg.receiveId] = acc[msg.receiveId] || [];
         acc[msg.receiveId].push(msg);
-        return acc;
-      }, {} as { [key: string]: any[] });
+      }
+      if (msg.senderId !== userId) {
+        acc[msg.senderId] = acc[msg.senderId] || [];
+        acc[msg.senderId].push(msg);
+      }
+      return acc;
+    }, {});
 
-      // Tạo danh sách khách hàng từ các receiveId
-      const customerList = Object.keys(groupedByCustomer).map((customerId) => ({
-        id: customerId,
-        messages: groupedByCustomer[customerId],
-        unreadCount: groupedByCustomer[customerId].filter(
-          (msg: any) => !msg.isRead
-        ).length,
-        user: groupedByCustomer[customerId][0].sender, // Lấy thông tin người nhận
-      }));
+    const customerList = Object.keys(groupedByCustomer).map((customerId) => ({
+      id: customerId,
+      messages: groupedByCustomer[customerId],
+      unreadCount: groupedByCustomer[customerId].filter(
+        (msg: any) => !msg.isRead
+      ).length,
+      user: groupedByCustomer[customerId][0].sender,
+    }));
+    setCustomers(customerList);
 
-      setCustomers(customerList);
-
-      // Lưu số lượng tin nhắn chưa đọc
-      const unreadCountsMap = customerList.reduce(
-        (acc, customer) => ({ ...acc, [customer.id]: customer.unreadCount }),
-        {}
-      );
-      setUnreadCounts(unreadCountsMap);
-    } catch (error) {
-      console.error("Error fetching customers:", error);
-    }
-  };
+    const unreadCountsMap = customerList.reduce(
+      (acc, customer) => ({ ...acc, [customer.id]: customer.unreadCount }),
+      {}
+    );
+    setUnreadCounts(unreadCountsMap);
+  } catch (error) {
+    console.error("Error fetching customers:", error);
+  }
+};
   const userStorage: any = useAuthStore();
   // Fetch tin nhắn của khách hàng được chọn
-  const fetchMessages = async (customerId: string) => {
-    try {
-      const param: IPagingParam = {
-        pageSize: 1000,
-        pageNumber: 1,
-        conditions: [
-          {
-            key: "any",
-            condition: "raw",
-            value: {
-              AND: [
-                { isNormal: true },
-                {
-                  OR: [
-                    {
-                      senderId: Number(customerId),
-                      receiveId: userStorage?.user?.id,
-                    },
-                    {
-                      receiveId: Number(customerId),
-                      senderId: userStorage?.user?.id,
-                    },
-                  ],
-                },
-              ],
-            },
+  const fetchMessages = async (customerId: string, ismark: boolean = true) => {
+  try {
+    const param: IPagingParam = {
+      pageSize: 1000,
+      pageNumber: 1,
+      conditions: [
+        {
+          key: "any",
+          condition: "raw",
+          value: {
+            AND: [
+              { isNormal: true },
+              { requestId: -1 }, // Thêm điều kiện này
+              {
+                OR: [
+                  {
+                    senderId: Number(customerId),
+                    receiveId: userStorage?.user?.id,
+                  },
+                  {
+                    receiveId: Number(customerId),
+                    senderId: userStorage?.user?.id,
+                  },
+                ],
+              },
+            ],
           },
-        ],
-        searchKey: "",
-        searchFields: [],
-        includeReferences: {
-          sender: true,
         },
-      };
-      const res = await chatService.getPaging<ServiceResponse>(param);
-      const data = res?.data.data || [];
-debugger
-      // Đánh dấu tất cả tin nhắn là đã đọc
+      ],
+      searchKey: "",
+      searchFields: [],
+      includeReferences: {
+        sender: true,
+      },
+    };
+    const res = await chatService.getPaging<ServiceResponse>(param);
+    const data = res?.data.data || [];
+    if (ismark) {
       markAsRead(customerId);
-
-      // Lưu tin nhắn vào state
-      setMessages(data);
-    } catch (error) {
-      console.error("Error fetching messages:", error);
     }
-  };
+    setMessages(data);
+    setTimeout(() => {
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop =
+          chatContainerRef.current.scrollHeight;
+      }
+    }, 100);
+  } catch (error) {
+    console.error("Error fetching messages:", error);
+  }
+};
 
   // Mark all messages as read for a specific customer
   const markAsRead = async (customerId: string) => {
@@ -129,7 +158,12 @@ debugger
   // Xử lý khi chọn khách hàng
   const handleCustomerClick = (customer: any) => {
     setSelectedCustomer(customer);
-    fetchMessages(customer.id);
+    fetchMessages(customer?.user?.id);
+
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
   };
 
   // Xử lý gửi tin nhắn mới
@@ -144,7 +178,7 @@ debugger
         senderId: userStorage?.user?.id,
         requestId: -1,
         isNormal: true,
-        receiveId: Number(selectedCustomer.id),
+        receiveId: Number(selectedCustomer?.user.id),
       };
       await chatService.post("/sendMessageToUser", newMessage);
       // Cập nhật danh sách tin nhắn
@@ -155,11 +189,48 @@ debugger
           createdAt: new Date().toISOString(),
         },
       ]);
+
+      // Scroll xuống cuối sau khi thêm tin nhắn
+      setTimeout(() => {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop =
+            chatContainerRef.current.scrollHeight;
+        }
+      }, 100); // Delay nhẹ để đảm bảo DOM đã được cập nhật
     } catch (error) {
       console.error("Error sending message:", error);
     }
   };
 
+  useEffect(() => {
+    const handleMessage = async (data: any) => {
+      const senderId = data.senderId;
+      if (customers.length === 0) {
+        fetchCustomers();
+        return;
+      }
+      // Fetch tin nhắn mới cho người gửi
+      await fetchMessages(senderId, false);
+
+      // Cập nhật số lượng tin nhắn chưa đọc
+      setUnreadCounts((prevCounts) => ({
+        ...prevCounts,
+        [senderId]: (prevCounts[senderId] || 0) + 1, // Tăng số lượng tin nhắn chưa đọc
+      }));
+      setTimeout(() => {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop =
+            chatContainerRef.current.scrollHeight;
+        }
+      }, 100); // Delay nhẹ để đảm bảo DOM đã được cập nhật
+    };
+
+    eventEmitter.on("newChatUser", handleMessage);
+
+    return () => {
+      eventEmitter.off("newChatUser", handleMessage);
+    };
+  }, []);
   return (
     <div className="fixed bottom-4 right-4 z-50">
       {" "}
@@ -179,10 +250,11 @@ debugger
       {/* Chat Interface */}
       {isOpen && (
         <div
+          ref={chatRef}
           className="fixed bottom-10 right-4 w-[800px] h-[650px] bg-white rounded-lg shadow-xl overflow-hidden flex z-50" // Tăng kích thước và thêm z-index
         >
           {/* Sidebar */}
-          <div className="w-1/4 border-r border-gray-200 p-4 overflow-y-auto">
+          <div className="w-2/4 border-r border-gray-200 p-4 overflow-y-auto">
             {" "}
             {/* Tăng kích thước sidebar */}
             <input
@@ -202,27 +274,34 @@ debugger
                 .map((customer) => (
                   <div
                     key={customer.id}
-                    className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer ${
-                      selectedCustomer?.id === customer.id
+                    className={`relative flex items-center gap-2 p-2 rounded-lg cursor-pointer ${
+                      selectedCustomer?.user?.id === customer.id
                         ? "bg-blue-100"
                         : "hover:bg-gray-100"
                     }`}
                     onClick={() => handleCustomerClick(customer)}
                   >
-                    <img
-                      src={
-                        customer.user.profilePictureURL || "/default-avatar.png"
-                      }
-                      alt={customer.user.fullName}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                    <div>
-                      <p className="font-medium">{customer.user.fullName}</p>
+                    {/* Avatar */}
+                    <div className="relative">
+                      <div className="relative w-8 h-8 rounded-full overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-200 to-purple-200 opacity-50"></div>
+                        <img
+                          src={customer.user.profilePictureURL || "/avt.svg"}
+                          alt={customer.user.fullName}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      </div>
+                      {/* Số lượng tin nhắn chưa đọc */}
                       {unreadCounts[customer.id] > 0 && (
-                        <div className="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                        <div className="absolute top-0 left-0 transform -translate-x-1/2 -translate-y-1/2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
                           {unreadCounts[customer.id]}
                         </div>
                       )}
+                    </div>
+
+                    {/* Thông tin khách hàng */}
+                    <div>
+                      <p className="font-medium">{customer.user.fullName}</p>
                     </div>
                   </div>
                 ))}
@@ -239,14 +318,11 @@ debugger
                 <>
                   <div className="flex items-center gap-2">
                     <img
-                      src={
-                        selectedCustomer.user.profilePictureURL ||
-                        "/default-avatar.png"
-                      }
-                      alt={selectedCustomer.user.fullName}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                    <span>{selectedCustomer.user.fullName}</span>
+                          src={selectedCustomer?.user.profilePictureURL || "/avt.svg"}
+                          alt={selectedCustomer?.user.fullName}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                    <span>{selectedCustomer?.user.fullName}</span>
                   </div>
                   <button
                     className="text-white hover:text-gray-200"
@@ -260,23 +336,25 @@ debugger
               )}
             </div>
             {/* Messages List */}
-            <div className="h-[500px] overflow-y-auto p-4">
+            <div
+              className="h-[500px] overflow-y-auto p-4"
+              ref={chatContainerRef}
+            >
               {" "}
               {/* Tăng chiều cao danh sách tin nhắn */}
               {messages.length > 0 ? (
                 messages.map((msg, index) => (
-                  
                   <div
                     key={index}
                     className={`mb-4 ${
-                      msg.senderId == selectedCustomer.id
+                      msg.senderId == selectedCustomer?.user?.id
                         ? "text-left"
                         : "text-right"
                     }`}
                   >
                     <div
                       className={`inline-block max-w-[70%] p-2 rounded-lg ${
-                        msg.senderId == selectedCustomer.id
+                        msg.senderId == selectedCustomer?.user?.id
                           ? "bg-gray-200 text-black"
                           : "bg-blue-500 text-white"
                       }`}
@@ -285,7 +363,7 @@ debugger
                     </div>
                     <div
                       className={`text-xs mt-1 ${
-                        msg.senderId == selectedCustomer.id
+                        msg.senderId == selectedCustomer?.user?.id
                           ? "text-left text-gray-500"
                           : "text-right text-gray-500"
                       }`}

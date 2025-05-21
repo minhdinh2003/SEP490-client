@@ -3,7 +3,6 @@
 import WithHydration from "@/HOC/withHydration";
 import { Route } from "@/routers/types";
 import useAuthStore from "@/store/useAuthStore";
-import { formatAddress } from "@/utils/helpers";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -17,61 +16,41 @@ const pages: {
   name: string;
   link: Route;
   hide?: boolean;
+  role?: any;
 }[] = [
   {
-    name: "Thông tin tài khoản",
-    link: "/account",
-  },
-
-  {
-    name: "Đơn hàng của tôi",
-    link: "/account-order",
-  },
-  // {
-  //   name: "Đơn hàng được đặt",
-  //   link: "/order-me",
-  //   hide: true,
-  // },
-  {
-    name: "Lịch sử giao dịch",
-    link: "/account-history",
+    name: "Đơn hàng được đặt",
+    link: "/order-me",
+    role: ["OWNER"]
   },
   {
-    name: "Danh sách voucher",
-    link: "/account-voucher",
-  },
-  {
-    name: "Đổi mật khẩu",
-    link: "/account-password",
-  },
+    name: "Tạo đơn hàng",
+    link: "/create-order",
+    role: ["OWNER"]
+  }
 ];
 
 const CommonLayout: FC<CommonLayoutProps> = ({ children }) => {
+  const auth: any = useAuthStore();
+  const role = auth?.user?.role;
   const pathname = usePathname();
   const userStorage: any = useAuthStore();
-  const auth: any = useAuthStore();
-  const isOwner = auth.user.role == "OWNER";
+
   return (
     <div className="nc-AccountCommonLayout container">
       <div className="mt-14 sm:mt-20">
-        <div className="max-w-4xl mx-auto">
-          <div className="max-w-2xl">
-            <h2 className="text-3xl xl:text-4xl font-semibold">Tài khoản</h2>
-            <span className="block mt-4 text-neutral-500 dark:text-neutral-400 text-base sm:text-lg">
-              <span className="text-slate-900 dark:text-slate-200 font-semibold">
-                {userStorage?.user?.fullName}
-                ,
-              </span>{" "}
-              {userStorage?.user?.email} ·
-              {formatAddress(userStorage?.user?.addressLine1)}
-            </span>
+        <div className=" mx-auto">
+          <div className="">
+            <h2 className="text-3xl xl:text-4xl font-semibold">
+              Quản lý đơn hàng
+            </h2>
           </div>
           <hr className="mt-10 border-slate-200 dark:border-slate-700"></hr>
 
           <div className="flex space-x-8 md:space-x-14 overflow-x-auto hiddenScrollbar">
             {pages
               .filter((i: any) => {
-                if (i.hide && !isOwner) {
+                if (!i.role.includes(role)) {
                   return false;
                 }
                 return true;
@@ -95,9 +74,7 @@ const CommonLayout: FC<CommonLayoutProps> = ({ children }) => {
           <hr className="border-slate-200 dark:border-slate-700"></hr>
         </div>
       </div>
-      <div className="max-w-4xl mx-auto pt-14 sm:pt-26 pb-24 lg:pb-32">
-        {children}
-      </div>
+      <div className=" mx-auto pt-14 sm:pt-26 pb-24 lg:pb-32">{children}</div>
     </div>
   );
 };

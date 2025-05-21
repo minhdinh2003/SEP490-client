@@ -14,8 +14,6 @@ const nextConfig = {
       { hostname: "tse3.mm.bing.net" },
       { hostname: "i.pinimg.com" },
       { hostname: "tse2.mm.bing.net" },
-      { hostname: "doctruyentranh.net.vn" },
-      { hostname: "firebasestorage.googleapis.com" },
       { hostname: "bid.modeltheme.com" },
       { hostname: "images.search.yahoo.com" },
       { hostname: "tse4.mm.bing.net" },

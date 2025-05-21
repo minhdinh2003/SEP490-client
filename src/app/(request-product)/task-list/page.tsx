@@ -1,17 +1,12 @@
 "use client";
 import NcModal from "@/shared/NcModal/NcModal";
 import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
 import Status from "@/shared/Status/Status";
 import useAuthStore from "@/store/useAuthStore";
 import {
   dateFormat3,
-  dateFormat4,
-  formatPriceVND,
   getRequestProductStatusColor,
   getRequestProductStatusText,
-  RequestProductStatus,
-  RequestStatus,
 } from "@/utils/helpers";
 import { ButtonIcon } from "@/shared/Button/CustomButton";
 import useMessageStore from "@/store/useMessStore";
@@ -20,18 +15,20 @@ import { useSearchParams } from "next/navigation";
 import { ServiceResponse } from "@/type/service.response";
 import { IPagingParam } from "@/contains/paging";
 import TaskDetailService from "@/http/taskDetailService";
+import RequestService from "@/http/requestService"; // Thêm dòng này
 import WorkDetail from "../component/WorkDetail";
 import ButtonPrimary from "@/shared/Button/ButtonPrimary";
 import OwnerCreateJob from "../component/OwnerCreateJob";
 import Input from "@/shared/Input/Input";
 
-const RequestList = () => {
+const TaskList = () => {
   const [isDatcoc, setIsDatcoc] = useState(false);
   const [openModal, setOpenModal] = useState(false);
   const [idWork, setIdWork] = useState("");
   const [images, setImages] = useState("");
   const userStore: any = useAuthStore();
-  const [listRequest, setListRequest] = useState<any>([]);
+  const [listTask, setListTask] = useState<any>([]);
+  const [listRequest, setListRequest] = useState<any[]>([]); // Thêm state này
   const [currentId, setCurrentId] = useState("");
   const [openWorkDetail, setOpenWorkDetail] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,7 +48,7 @@ const RequestList = () => {
     messStore?.setIdRoom?.(null);
   };
 
-  const getListRequest = async (page: number = 1) => {
+  const getListTask = async (page: number = 1) => {
     try {
       const param: IPagingParam = {
         pageSize: 5,
@@ -78,93 +75,127 @@ const RequestList = () => {
         includeReferences: {
           assignee: true,
         },
-        sortOrder: "createdAt desc",
+        sortOrder: "updatedAt asc",
       };
       const res = await TaskDetailService.getPaging<ServiceResponse>(param);
-      setListRequest(res.data.data);
+      setListTask(res.data.data);
       setCurrentPage(page);
       setTotalPages(Math.ceil(res.data.totalCount / 5));
     } catch (error: any) {}
   };
+
+  // Lấy danh sách request tương ứng với từng task
   useEffect(() => {
-    getListRequest();
+    const fetchRequests = async () => {
+      if (!listTask || listTask.length === 0) {
+        setListRequest([]);
+        return;
+      }
+      const requests = await Promise.all(
+        listTask.map(async (task: any) => {
+          if (!task.requestId) return null;
+          try {
+            const res = await RequestService.getById<ServiceResponse>(task.requestId);
+            return res.data;
+          } catch {
+            return null;
+          }
+        })
+      );
+      setListRequest(requests);
+    };
+    fetchRequests();
+  }, [listTask]);
+
+  useEffect(() => {
+    getListTask();
   }, []);
 
   const reset = () => {
     setOpenWorkDetail(false);
   };
   const handleSearch = async () => {
-    getListRequest(1); // Reset về trang đầu tiên khi tìm kiếm
+    getListTask(1);
   };
 
+  // Render table, lấy request theo index
   const renderListTable = () =>
-    finalList?.map((request: any, index: number) => (
-      <tr
-        key={index}
-        className={`${request?.id == idNoty ? "bg-green-200" : ""}`}
-      >
-        <td key={index} className="p-4 border-b border-blue-gray-50">
-          <div className="flex items-center gap-3 min-w-[30px]">
-            <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
-              {request.id}
-            </p>
-          </div>
-        </td>
-        <td key={index} className="p-4 border-b border-blue-gray-50">
-          <div className="flex items-center gap-3 min-w-[100px]">
-            <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
-              {request.title}
-            </p>
-          </div>
-        </td>
-        <td key={index} className="p-4 border-b border-blue-gray-50">
-          <div className="flex items-center gap-3 min-w-[100px]">
-            <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
-              {dateFormat3(request?.createdAt)}
-            </p>
-          </div>
-        </td>
-        <td key={index} className="p-4 border-b border-blue-gray-50">
-          <div className="flex items-center gap-3 min-w-[200px]">
-            <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
-              {request?.address}
-            </p>
-          </div>
-        </td>
-        <td key={index} className="p-4 border-b border-blue-gray-50">
-          <div className="flex items-center gap-3 min-w-[200px]">
-            <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
-              {request?.description}
-            </p>
-          </div>
-        </td>
-
-        <td className="p-4 border-b border-blue-gray-50 min-w-[150px]">
-          <Status
-            text={getRequestProductStatusText(request.status)}
-            color={getRequestProductStatusColor(request.status)}
-          />
-        </td>
-        <td className=" min-w-[200px] p-4 border-b border-blue-gray-50 flex ">
-          <div className=" flex items-center gap-3">
-            <ButtonIcon
-              onClick={() => {
-                setOpenWorkDetail(true);
-                setIdWork(request.id);
-                setImages(request.Images);
-              }}
-              svg={"/view.svg"}
-              tooltip="Xem công việc"
+    finalList?.map((task: any, index: number) => {
+      const request = listRequest[index];
+      return (
+        <tr
+          key={index}
+          className={`${task?.id == idNoty ? "bg-green-200" : ""}`}
+        >
+          <td key={index} className="p-4 border-b border-blue-gray-50">
+            <div className="flex items-center gap-3 min-w-[30px]">
+              <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
+                {request?.id || ""}
+              </p>
+            </div>
+          </td>
+          <td key={index} className="p-4 border-b border-blue-gray-50">
+            <div className="flex items-center gap-3 min-w-[100px]">
+              <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
+                {request?.description || ""}
+              </p>
+            </div>
+          </td>
+          <td key={index} className="p-4 border-b border-blue-gray-50">
+            <div className="flex items-center gap-3 min-w-[100px]">
+              <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
+                {task.title}
+              </p>
+            </div>
+          </td>
+          <td key={index} className="p-4 border-b border-blue-gray-50">
+            <div className="flex items-center gap-3 min-w-[100px]">
+              <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
+                {dateFormat3(task?.createdAt)}
+              </p>
+            </div>
+          </td>
+          <td key={index} className="p-4 border-b border-blue-gray-50">
+            <div className="flex items-center gap-3 min-w-[200px]">
+              <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
+                {request?.address || ""}
+              </p>
+            </div>
+          </td>
+          <td key={index} className="p-4 border-b border-blue-gray-50">
+            <div className="flex items-center gap-3 min-w-[200px]">
+              <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
+                {task?.description}
+              </p>
+            </div>
+          </td>
+          <td className="p-4 border-b border-blue-gray-50 min-w-[150px]">
+            <Status
+              text={getRequestProductStatusText(task.status)}
+              color={getRequestProductStatusColor(task.status)}
             />
-          </div>
-        </td>
-      </tr>
-    ));
+          </td>
+          <td className=" min-w-[200px] p-4 border-b border-blue-gray-50 flex ">
+            <div className=" flex items-center gap-3">
+              <ButtonIcon
+                onClick={() => {
+                  setOpenWorkDetail(true);
+                  setIdWork(task.id);
+                  setImages(task.Images);
+                }}
+                svg={"/view.svg"}
+                tooltip="Xem công việc"
+              />
+            </div>
+          </td>
+        </tr>
+      );
+    });
 
   // mark
   const query = useSearchParams();
   const idNoty = query.get("id");
-  const finalList = [...listRequest];
+  const finalList = [...listTask];
   const index = finalList.findIndex((i: any) => i.id == idNoty);
   if (index >= 0) {
     const item = finalList[index];
@@ -176,7 +207,7 @@ const RequestList = () => {
       <ModalMessage
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        idRequest={idMess}
+        idTask={idMess}
       />
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2 w-[400px]">
@@ -216,7 +247,12 @@ const RequestList = () => {
                     </th>
                     <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
                       <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Tiêu đề
+                        Yêu cầu
+                      </p>
+                    </th>
+                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                        Công việc sửa chữa
                       </p>
                     </th>
                     <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
@@ -261,7 +297,7 @@ const RequestList = () => {
       <div className="flex justify-center mt-4">
         <button
           disabled={currentPage === 1}
-          onClick={() => getListRequest(currentPage - 1)}
+          onClick={() => getListTask(currentPage - 1)}
           className="px-3 py-1 bg-gray-200 rounded-l disabled:bg-gray-100"
         >
           Trước
@@ -271,7 +307,7 @@ const RequestList = () => {
         </span>
         <button
           disabled={currentPage === totalPages}
-          onClick={() => getListRequest(currentPage + 1)}
+          onClick={() => getListTask(currentPage + 1)}
           className="px-3 py-1 bg-gray-200 rounded-r disabled:bg-gray-100"
         >
           Sau
@@ -286,7 +322,7 @@ const RequestList = () => {
             callback={() => {
               setOpenModal(false);
               setCurrentId("");
-              getListRequest();
+              getListTask();
             }}
           />
         )}
@@ -302,7 +338,7 @@ const RequestList = () => {
             isDatcoc={isDatcoc}
             callback={() => {
               reset();
-              getListRequest();
+              getListTask();
             }}
             idWork={idWork}
             isCustomer={false}
@@ -314,4 +350,4 @@ const RequestList = () => {
   );
 };
 
-export default RequestList;
+export default TaskList;

@@ -1,13 +1,8 @@
 "use client";
 
 import { Popover, Transition } from "@/app/headlessui";
-import { avatarImgs } from "@/contains/fakeData";
 import { Fragment } from "react";
-import Avatar from "@/shared/Avatar/Avatar";
-import SwitchDarkMode2 from "@/shared/SwitchDarkMode/SwitchDarkMode2";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOutAction } from "@/actions/Actions";
 import useAuthStore from "@/store/useAuthStore";
 import useNotyStore from "@/store/useNotyStore";
 import { dateFormat3, renderMessage } from "@/utils/helpers";

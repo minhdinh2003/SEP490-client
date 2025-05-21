@@ -1,6 +1,4 @@
 
-import { storage } from "@/provider/firebaseStorege";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import moment from "moment";
 import { v4 as uuidv4 } from "uuid";
 
@@ -26,22 +24,6 @@ export const getUrlImage = (Images: string) => {
   };
 };
 
-// Upload image to firebase
-
-export async function uploadImagesToFirebase(files: any) {
-  try {
-    const uploadPromises = Array.from(files)?.map((file: any) => {
-      const imageRef = ref(storage, `images/${file.name + uuidv4()}`);
-      return uploadBytes(imageRef, file).then(() => getDownloadURL(imageRef));
-    });
-
-    const urls = await Promise.all(uploadPromises);
-    return urls;
-  } catch (error) {
-    console.error("Error uploading images to Firebase:", error);
-    return null;
-  }
-}
 
 
 export const dateFormat = (date: any) =>

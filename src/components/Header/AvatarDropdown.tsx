@@ -62,7 +62,7 @@ export default function AvatarDropdown() {
                   <div className="relative grid grid-cols-1 gap-6 bg-white dark:bg-neutral-800 py-7 px-6">
                     <div className="flex items-center space-x-3">
                       <Avatar
-                        imgUrl={user?.profilePictureUR}
+                        imgUrl={user?.profilePictureURL}
                         sizeClass="w-12 h-12"
                       />
                       <div className="flex-grow">

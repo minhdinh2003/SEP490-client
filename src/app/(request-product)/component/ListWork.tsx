@@ -39,7 +39,7 @@ const ListWorkOfRequest = ({
   moneyCheckout,
   moneyDatcoc,
   handleReject,
-  callback = () => {},
+  callback = () => { },
 }: any) => {
   const statusRequest = [
     {
@@ -161,30 +161,30 @@ const ListWorkOfRequest = ({
             e.preventDefault();
             mode == "dc"
               ? handleCheckout(
-                  idRequest,
-                  100,
-                  false,
-                  moneyDatcoc,
-                  undefined,
-                  () => {
-                    setOpenModal(false);
-                    getListWork();
-                    getDetailProductRequest();
-                  }
-                )
+                idRequest,
+                100,
+                false,
+                moneyDatcoc,
+                undefined,
+                () => {
+                  setOpenModal(false);
+                  getListWork();
+                  getDetailProductRequest();
+                }
+              )
               : handleCheckout(
-                  idRequest,
-                  100,
-                  true,
-                  moneyCheckout,
-                  AddressId,
-                  () => {
-                    setOpenAddress(false);
-                    setOpenModal(false);
-                    callback();
-                  },
-                  true
-                );
+                idRequest,
+                100,
+                true,
+                moneyCheckout,
+                AddressId,
+                () => {
+                  setOpenAddress(false);
+                  setOpenModal(false);
+                  callback();
+                },
+                true
+              );
           }}
         >
           {mode == "tt" ? "Thanh toán" : "Đặt cọc"}
@@ -220,7 +220,10 @@ const ListWorkOfRequest = ({
           Mô tả: {description}
         </p>
         <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-          Chi phí phát sinh: {task?.price ? formatPriceVND(task?.price) : 0} VND
+          Chi phí : {task?.price ? formatPriceVND(task?.price) : 0} VND
+        </p>
+        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+          Chi phí phát sinh: {task?.incidentalCosts ? formatPriceVND(task?.incidentalCosts) : 0} VND
         </p>
         {!task?.assignee ? (
           <p className="text-gray-600 text-sm mb-4 line-clamp-2">
@@ -231,12 +234,11 @@ const ListWorkOfRequest = ({
             Nhân viên: {task?.assignee?.fullName}
           </p>
         )}
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{}</p>
+        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{ }</p>
         <div className="flex justify-between items-center">
           <span
-            className={`text-xs font-semibold ${
-              status === "Completed" ? "text-green-500" : "text-yellow-500"
-            }`}
+            className={`text-xs font-semibold ${status === "Completed" ? "text-green-500" : "text-yellow-500"
+              }`}
           >
             <Status
               text={getWorkStatusText(status)}
@@ -300,19 +302,25 @@ const ListWorkOfRequest = ({
 
   const handleUpdateRequest = async () => {
     try {
-      if (imageRepairs.length === 0) {
+      if (imageRepairs.length === 0 && request?.repairType === "IN_SHOP") {
         toast.error("Vui lòng thêm ảnh");
+        return;
+      }
+      // Kiểm tra tất cả task đã hoàn thành
+      const allCompleted = listWork.every((task: any) => task.status === "COMPLETED");
+      if (!allCompleted) {
+        toast.error("Tất cả công việc phải được hoàn thành");
         return;
       }
       const res = await RequestService.updateById(idRequest, {
         status: status,
         imageRepairs: imageRepairs
-      }) ;
+      });
       callback();
       toast.success("Đã cập nhật");
-    } catch (error) {}
+    } catch (error) { }
   };
-  const canPay = request?.status == RequestStatus.IN_PROGRESS ||  request?.status == RequestStatus.COMPLETED;
+  const canPay = request?.status == RequestStatus.IN_PROGRESS || request?.status == RequestStatus.COMPLETED;
   return listWork.length > 0 ? (
     <div>
       <div className="ml-10">
@@ -332,10 +340,14 @@ const ListWorkOfRequest = ({
             ))}
           </Select>
         ) : (
-          <Status
-            text={getRequestProductStatusText(request.status)}
-            color={getRequestProductStatusColor(request.status)}
-          />
+          request?.status ? (
+            <Status
+              text={getRequestProductStatusText(request.status)}
+              color={getRequestProductStatusColor(request.status)}
+            />
+          ) : (
+            <span className="text-gray-400">Đang tải...</span>
+          )
         )}
       </div>
       <div className="grid grid-cols-3 p-10 gap-10 max-h-96 overflow-auto">
@@ -343,13 +355,13 @@ const ListWorkOfRequest = ({
       </div>
       {canPay && !isCustomer && (
         <div className="flex flex-col ">
-          {!isThanhToan && (
+          {!isThanhToan && request?.repairType ==="IN_SHOP" && (
             <div className="my-5 text-gray-500">
               Tất cả công việc đã xong, hãy cập nhật ảnh sản phẩm sau khi đã sửa
             </div>
           )}
           <div className="rounded-full w-[160px] h-[100px]">
-            {!isThanhToan && (
+            {!isThanhToan && request?.repairType ==="IN_SHOP" &&(
               <label
                 htmlFor="input-file"
                 className="py-1 rounded-full flex items-center justify-center cursor-pointer bg-black text-[white]"
@@ -428,18 +440,18 @@ const ListWorkOfRequest = ({
         </div>
       )}
 
-      {(( isCustomer && imageRepairs.length > 0) ||
+      {((isCustomer && imageRepairs.length > 0) ||
         ((canPay || isThanhToan) &&
           !isCustomer &&
           isThanhToan &&
           imageRepairs.length > 0)) && (
-        <div className="mt-4">
-          <h3 className="font-semibold text-lg mb-5">
-            Danh sách hình ảnh sản phẩm{" "}
-          </h3>
-          <CoverflowSlider images={imageRepairs || []} />
-        </div>
-      )}
+          <div className="mt-4">
+            <h3 className="font-semibold text-lg mb-5">
+              Danh sách hình ảnh sản phẩm{" "}
+            </h3>
+            <CoverflowSlider images={imageRepairs || []} />
+          </div>
+        )}
       <NcModal
         isOpenProp={openWorkDetail}
         onCloseModal={() => {
@@ -449,8 +461,9 @@ const ListWorkOfRequest = ({
           <WorkDetail
             isDatcoc={isDatcoc}
             callback={() => {
-              reset();
               getListWork();
+              getDetailProductRequest();
+              reset();
             }}
             idWork={idWork}
             isCustomer={isCustomer}

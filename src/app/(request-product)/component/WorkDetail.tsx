@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import "swiper/css";
 import "swiper/css/navigation";
-
+import RequestService from "@/http/requestService";
 import CoverflowSlider from "@/components/slider/SliderImage";
 import ButtonPrimary from "@/shared/Button/ButtonPrimary";
 import Select from "@/shared/Select/Select";
@@ -26,8 +26,7 @@ import TextArea from "antd/es/input/TextArea";
 import { Input } from "antd";
 
 const WorkDetail = ({
-  idRequest,
-  callback = () => {},
+  callback = () => { },
   images,
   isCustomer,
   idWork,
@@ -57,6 +56,14 @@ const WorkDetail = ({
   const isEmployee = userStore.user.role == "EMPLOYEE";
   const isOwner = userStore.user.role == "OWNER";
   const [work, setWork] = useState<any>([]);
+  const [items, setItems] = useState<any[]>([]);
+  const [request, setRequest] = useState<any>(null);
+  const [idRequest, setIdRequest] = useState<any>(null);
+  const handleItemChange = (index: number, isChecked: boolean) => {
+    const updatedItems = [...items];
+    updatedItems[index].isDone = isChecked;
+    setItems(updatedItems);
+  };
   function renderTableRow(label: any, value: any) {
     return (
       <tr style={{ backgroundColor: "white" }}>
@@ -82,8 +89,18 @@ const WorkDetail = ({
       setListImage(getUrlImage(res?.data?.images).listImage);
       setStatus(res.data?.status);
       setInitStatus(res.data?.status);
+      setIdRequest(res.data?.requestId);
     } catch (error: any) {
       console.log(error);
+      handleErrorHttp(error?.payload);
+    }
+  };
+
+  const getRequestById = async () => {
+    try {
+      const res = await RequestService.getById<ServiceResponse>(idRequest);
+      setRequest(res.data);
+    } catch (error: any) {
       handleErrorHttp(error?.payload);
     }
   };
@@ -94,6 +111,11 @@ const WorkDetail = ({
       getWorkDetail();
     }
   }, [idWork]);
+  useEffect(() => {
+    if (idRequest) {
+      getRequestById();
+    }
+  }, [idRequest]);
 
   const handleChangeFile = async (e: any) => {
     const files = e.target.files;
@@ -129,6 +151,8 @@ const WorkDetail = ({
         comments: work.comments,
         price: work.price,
         address: work.address,
+        items: work.items,
+        incidentalCosts: work.incidentalCosts,
       };
       if (work.assignedTo) {
         data.assignee = {
@@ -168,7 +192,11 @@ const WorkDetail = ({
       handleErrorHttp(error?.payload);
     }
   };
-
+  const handleItemChangeTask = (index: number, isChecked: boolean) => {
+    const updatedItems = [...work.items];
+    updatedItems[index].isDone = isChecked;
+    setWork({ ...work, items: updatedItems });
+  };
   useEffect(() => {
     getListEmployee();
   }, []);
@@ -227,7 +255,39 @@ const WorkDetail = ({
                   </div>
                 )}
                 {renderTableRow(
-                  "Chi phí phát sinh",
+                  "Danh sách công việc",
+                  <div className="w-[400px]">
+                    <div className="block">
+                      {work?.items?.length > 0 ? (
+                        work.items.map((item: any, index: number) => (
+                          <div key={index} className="flex items-center mb-2">
+                            {/* Checkbox */}
+                            <input
+                              disabled={
+                                work.status == WorkStatus.Done ||
+                                work.status == WorkStatus.Reject
+                              }
+                              type="checkbox"
+                              checked={item.isDone}
+                              onChange={(e) =>
+                                handleItemChangeTask(index, e.target.checked)
+                              }
+                              className="mr-2"
+                            />
+                            {/* Tiêu đề công việc */}
+                            <span>{item.title}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-center text-gray-500">
+                          Không có công việc
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {renderTableRow(
+                  "Chi phí công việc",
                   <div className="w-[400px]">
                     <Input
                       onChange={(e) => {
@@ -238,6 +298,27 @@ const WorkDetail = ({
                       }}
                       type="number"
                       value={work?.price || 0}
+                      disabled={
+                        isCustomer ||
+                        isEmployee ||
+                        work.status == WorkStatus.Done ||
+                        work.status == WorkStatus.Reject
+                      }
+                    ></Input>
+                  </div>
+                )}
+                {renderTableRow(
+                  "Chi phí phát sinh",
+                  <div className="w-[400px]">
+                    <Input
+                      onChange={(e) => {
+                        setWork({
+                          ...work,
+                          incidentalCosts: parseInt(e.target.value),
+                        });
+                      }}
+                      type="number"
+                      value={work?.incidentalCosts || 0}
                       disabled={
                         isCustomer ||
                         isEmployee ||
@@ -269,22 +350,20 @@ const WorkDetail = ({
                     </Select>
                   </div>
                 )}
-                {renderTableRow(
-                  "Địa chỉ",
-                  <TextArea
-                    className="outline-none rounded border border-gray-400 leading-normal resize-none w-full h-16 py-2 px-3 font-medium placeholder-gray-700"
-                    name="body"
-                    required
-                    value={work?.address}
-                    onChange={(e: any) => {
-                      setWork({ ...work, address: e.target.value });
-                    }}
-                    disabled={
-                      work.status == WorkStatus.Done ||
-                      work.status == WorkStatus.Reject
-                    }
-                  ></TextArea>
-                )}
+                {request?.repairType === "AT_HOME" &&
+                  renderTableRow(
+                    "Địa chỉ",
+                    <TextArea
+                      className="outline-none rounded border border-gray-400 leading-normal resize-none w-full h-16 py-2 px-3 font-medium placeholder-gray-700"
+                      name="body"
+                      required
+                      value={request?.address}
+                      disabled={
+                        work.status == WorkStatus.Done ||
+                        work.status == WorkStatus.Reject
+                      }
+                    ></TextArea>
+                  )}
               </tbody>
             </table>
 
@@ -379,17 +458,17 @@ const WorkDetail = ({
 
             {((isCustomer && work.Status != 1) ||
               work.status == WorkStatus.Done) && (
-              <div className="mt-4">
-                <h3 className="font-semibold text-lg mb-5">
-                  Danh sách hình ảnh{" "}
-                </h3>
-                {!listImage?.length ? (
-                  <div>Danh sách ảnh trống</div>
-                ) : (
-                  <CoverflowSlider images={listImage || []} />
-                )}
-              </div>
-            )}
+                <div className="mt-4">
+                  <h3 className="font-semibold text-lg mb-5">
+                    Danh sách hình ảnh{" "}
+                  </h3>
+                  {!listImage?.length ? (
+                    <div>Danh sách ảnh trống</div>
+                  ) : (
+                    <CoverflowSlider images={listImage || []} />
+                  )}
+                </div>
+              )}
           </div>
         ) : (
           <div className="flex justify-center items-center text-[gray] pt-[100px]">

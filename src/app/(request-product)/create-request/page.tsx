@@ -11,8 +11,9 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import useAuthStore from "@/store/useAuthStore";
 import UploadService from "@/http/uploadService";
+import { add } from "date-fns";
 
-const CreateWoodenBookRequest = ({ editItem, callback = () => {} }: any) => {
+const CreateWoodenBookRequest = ({ editItem, callback = () => { } }: any) => {
   const [listImage, setListImage] = useState<any>([]);
   const userStore: any = useAuthStore();
   const handleChangeFile = async (e: any) => {
@@ -32,7 +33,16 @@ const CreateWoodenBookRequest = ({ editItem, callback = () => {} }: any) => {
       setListImage([...listImage, ...listUrl]);
     }
   };
-
+  useEffect(() => {
+    // Nếu user đã có address, tự động set vào form khi tạo mới
+    if (!editItem && userStore.user?.addressLine1) {
+      setFormData((prev: any) => ({
+        ...prev,
+        address: userStore.user.province + "," + userStore.user.district + "," + userStore.user.ward+ "," + userStore.user.addressLine1,
+      }));
+    }
+  }, [userStore.user, editItem]);
+  
   const handleDeleteImage = (index: any) => {
     const newListImage = [...listImage];
     newListImage.splice(index, 1);
@@ -46,7 +56,8 @@ const CreateWoodenBookRequest = ({ editItem, callback = () => {} }: any) => {
     images: "",
     type: "car",
     reasonReject: "",
-    repairType: "IN_SHOP"
+    repairType: "IN_SHOP",
+    address: "",
   };
 
   const [formData, setFormData] = useState<any>(initialData);
@@ -197,6 +208,24 @@ const CreateWoodenBookRequest = ({ editItem, callback = () => {} }: any) => {
               {errors.repairType && (
                 <span className="text-red-500">{errors.repairType}</span>
               )}
+              {formData.repairType === "AT_HOME" && (
+                <label className="block">
+                  <span className="text-neutral-800 dark:text-neutral-200">
+                    Địa chỉ sửa chữa
+                  </span>
+                  <Input
+                    value={formData.address || ""}
+                    onChange={changeData("address")}
+                    placeholder="Nhập địa chỉ sửa chữa"
+                    className="mt-1"
+                    name="address"
+                  />
+                  {errors.address && (
+                    <span className="text-red-500">{errors.address}</span>
+                  )}
+                </label>
+              )}
+
             </label>
             {/* Combobox for Type */}
             <label className="block">

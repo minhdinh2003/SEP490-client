@@ -268,7 +268,7 @@ const ProductCard: FC<any> = ({
             className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold z-10"
             style={{ boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)" }}
           >
-            Đã bán
+           Hết hàng
           </div>
         )}
 
