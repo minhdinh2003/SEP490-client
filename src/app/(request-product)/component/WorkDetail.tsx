@@ -220,7 +220,9 @@ const WorkDetail = ({
                     }
                     disabled={
                       work.status == WorkStatus.Done ||
-                      work.status == WorkStatus.Reject
+                      work.status == WorkStatus.Reject ||
+                      isCustomer ||
+                      isEmployee
                     }
                   ></TextArea>
                 )}

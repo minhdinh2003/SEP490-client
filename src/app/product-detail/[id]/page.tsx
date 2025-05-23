@@ -612,11 +612,10 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
                         key={index}
                         src={url}
                         alt={`Thumbnail ${index}`}
-                        className={`w-16 h-16 object-cover cursor-pointer rounded ${
-                          currentImageIndex === index
+                        className={`w-16 h-16 object-cover cursor-pointer rounded ${currentImageIndex === index
                             ? "border-2 border-blue-500"
                             : "opacity-70"
-                        }`}
+                          }`}
                         onClick={() => setCurrentImageIndex(index)}
                       />
                     ))}
@@ -649,9 +648,12 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
           <hr className="border-slate-200 dark:border-slate-700" />
           {!isQuickView &&
             listOrder?.length > 0 &&
-            listOrder.findIndex(
-              (order: any) => order.orderItems[0].productId == finalId
-            ) >= 0 && (
+            listOrder.some(
+              (order: any) =>
+                Array.isArray(order.orderItems) &&
+                order.orderItems.length > 0 &&
+                order.orderItems[0].productId == finalId
+            ) && (
               <FormReview
                 callback={() => setReget(reget + 1)}
                 ProductID={data?.id}

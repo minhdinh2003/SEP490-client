@@ -120,7 +120,7 @@ const RequestList = () => {
       const res = await RequestService.getPaging<ServiceResponse>(param);
       setListRequest(res.data.data);
       setTotalPages(Math.floor(res.data?.totalCount / 5) + 1);
-    } catch (error: any) {}
+    } catch (error: any) { }
   };
   useEffect(() => {
     getListRequest(currentPage, searchKeyword);
@@ -167,7 +167,7 @@ const RequestList = () => {
 
   const getPriceArisen = (task: any) => {
     const priceArisen = task?.TaskDetail?.reduce(
-      (acc: number, taskDetail: any) => acc + taskDetail.price,
+      (acc: number, taskDetail: any) => acc + taskDetail.incidentalCosts,
       0
     );
     return priceArisen;
@@ -178,6 +178,13 @@ const RequestList = () => {
         key={index}
         className={`${request?.id == idNoty ? "bg-green-200" : ""}`}
       >
+        <td key={index} className="p-4 border-b border-blue-gray-50">
+          <div className="flex items-center gap-3 min-w-[30px]">
+            <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
+              {request.id}
+            </p>
+          </div>
+        </td>
         <td key={index} className="p-4 border-b border-blue-gray-50">
           <div className="flex items-center gap-3 min-w-[100px]">
             <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
@@ -314,61 +321,69 @@ const RequestList = () => {
 
       <main className="  ">
         {(finalList as any)?.length > 0 ? (
-          <div className="flex  bg-white">
-            <div className="px-0">
-              <table className="w-full min-w-full table-auto text-left">
-                <thead>
-                  <tr>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Người tạo
-                      </p>
-                    </th>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        SĐT
-                      </p>
-                    </th>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Thời gian tạo
-                      </p>
-                    </th>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Mô tả
-                      </p>
-                    </th>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Hình thức sửa
-                      </p>
-                    </th>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Giá thỏa thuận
-                      </p>
-                    </th>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Chi phí phát sinh
-                      </p>
-                    </th>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Trạng Thái
-                      </p>
-                    </th>
+          <div className="w-full  bg-white">
+            <div className="px-0 w-full">
+              <div className="overflow-x-auto w-full">
+                <table className="w-full min-w-full table-auto text-left">
+                  <thead>
 
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Hành động
-                      </p>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>{renderListTable()}</tbody>
-              </table>
+                    <tr>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          ID
+                        </p>
+                      </th>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          Khách hàng
+                        </p>
+                      </th>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          SĐT
+                        </p>
+                      </th>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          Thời gian tạo
+                        </p>
+                      </th>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          Mô tả
+                        </p>
+                      </th>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          Hình thức sửa
+                        </p>
+                      </th>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          Giá thỏa thuận
+                        </p>
+                      </th>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          Chi phí phát sinh
+                        </p>
+                      </th>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          Trạng Thái
+                        </p>
+                      </th>
+
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          Hành động
+                        </p>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>{renderListTable()}</tbody>
+                </table>
+              </div>
             </div>
           </div>
         ) : (

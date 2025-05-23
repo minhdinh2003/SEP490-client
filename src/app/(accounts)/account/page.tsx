@@ -35,6 +35,33 @@ const AccountPage = () => {
   }, []);
   const updateUser = async (e: any) => {
     e.preventDefault();
+
+    // Validate ngày sinh
+    const dob = new Date(dataUser.dateOfBirth);
+    const now = new Date();
+    const age = now.getFullYear() - dob.getFullYear();
+    const m = now.getMonth() - dob.getMonth();
+    const day = now.getDate() - dob.getDate();
+    // Điều chỉnh nếu chưa tới sinh nhật năm nay
+    const realAge = m < 0 || (m === 0 && day < 0) ? age - 1 : age;
+
+    if (isNaN(dob.getTime())) {
+      toast.error("Ngày sinh không hợp lệ.");
+      return;
+    }
+    if (realAge < 18) {
+      toast.error("Bạn phải đủ 18 tuổi trở lên.");
+      return;
+    }
+    if (realAge > 100) {
+      toast.error("Tuổi tối đa là 100.");
+      return;
+    }
+
+    if (!isValidPhoneNumber(dataUser.phoneNumber)) {
+      toast.error("Số điện thoại không hợp lệ. Vui lòng nhập đúng 10 số và bắt đầu bằng 0.");
+      return;
+    }
     try {
       const body = { ...dataUser };
       body.role = role;
@@ -48,6 +75,7 @@ const AccountPage = () => {
         toast.success("Cập nhật thành công");
         userStorage.getInfoUser(body);
       }
+
     } catch (error: any) {
       handleErrorHttp(error?.payload);
     }
@@ -56,6 +84,11 @@ const AccountPage = () => {
   const onChangeData = (key: string) => (e: any) => {
     const value = e.target.value;
     setDataUser({ ...dataUser, [key]: value });
+  };
+
+  const isValidPhoneNumber = (phone: string) => {
+    // Bắt đầu bằng 0, có 10 số
+    return /^0\d{9}$/.test(phone);
   };
 
   // Change AVATAR

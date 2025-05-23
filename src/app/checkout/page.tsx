@@ -69,7 +69,7 @@ const CheckoutPage = () => {
       };
       const res = await voucherService.getPaging<ServiceResponse>(param);
       setVouchers(res.data?.data);
-    } catch (error) {}
+    } catch (error) { }
   };
 
   useEffect(() => {
@@ -158,12 +158,22 @@ const CheckoutPage = () => {
   };
 
   const getAddressString = () => {
-    return `${user?.province}, ${user?.district}, ${user.ward}, ${user.addressLine1}, ${user?.addressLine2}`;
+    // Kiểm tra các trường bắt buộc
+    if (
+      !user?.province ||
+      !user?.district ||
+      !user?.ward ||
+      !user?.addressLine1
+    ) {
+      return "";
+    }
+    return `${user?.province}, ${user?.district}, ${user.ward}, ${user.addressLine1}, ${user?.addressLine2 || ""}`;
   };
 
   // Hàm xử lý áp dụng mã voucher
-  const applyVoucher = async () => {
-    if (!voucherCode.trim()) {
+  const applyVoucher = async (code?: string) => {
+    const voucherToApply = code !== undefined ? code : voucherCode;
+    if (!voucherToApply.trim()) {
       toast.error("Vui lòng nhập mã voucher");
       return;
     }
@@ -173,7 +183,7 @@ const CheckoutPage = () => {
     var request = listProductCheckout[0];
     try {
       const body = {
-        voucherCode: voucherCode,
+        voucherCode: voucherToApply,
         quantity: 1,
         productId: parseInt(request.ProductID),
       };
@@ -330,26 +340,27 @@ const CheckoutPage = () => {
               <div className="mt-6 flex items-center space-x-4">
                 <select
                   value={voucherCode || ""}
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const code = e.target.value;
                     setVoucherCode(code || "");
-                    const voucher = vouchers.find((v) => v.code === code);
-                    setSelectedVoucher(voucher || null);
-                    applyVoucher();
+                    if (!code) {
+                      setDiscountedTotal(null);
+                      setSelectedVoucher(null);
+                    } else {
+                      const voucher = vouchers.find((v) => v.code === code);
+                      // Gọi applyVoucher ngay khi chọn
+                      await applyVoucher(code);
+                    }
                   }}
                   className="flex-1 px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="">-- Chọn voucher --</option>
                   {vouchers.map((voucher) => (
                     <option key={voucher.id} value={voucher.code}>
-                      <span
-                        title={`${voucher.code} - ${voucher.promotion.name}`}
-                      >
-                        {`${voucher.code} - ${truncateText(
-                          voucher.promotion.name,
-                          30
-                        )}`}
-                      </span>
+                      {`${voucher.code} - ${truncateText(
+                        voucher.promotion.name,
+                        30
+                      )}`}
                     </option>
                   ))}
                 </select>

@@ -15,7 +15,7 @@ import Select from "react-select";
 
 const EmployeeCreateWork = ({
   editItem,
-  callback = () => {},
+  callback = () => { },
   idRequest,
 }: any) => {
   const userStore: any = useAuthStore();
@@ -28,33 +28,34 @@ const EmployeeCreateWork = ({
     deadline: "",
     price: 0,
     address: "",
-    items: []
+    items: [],
+    incidentalCosts: 0,
   };
-  const [employees, setEmployees] = useState([]);
   const [formData, setFormData] = useState<any>(initialData);
   const [errors, setErrors] = useState<any>({});
-  const [showCustomTitleInput, setShowCustomTitleInput] = useState(false); // Trạng thái hiển thị input
+  const [showCustomTitleInput, setShowCustomTitleInput] = useState(false);
 
   // Danh sách công việc mẫu
   const [taskTemplates, setTaskTemplates] = useState<any[]>([]);
   useEffect(() => {
     const fetchTaskTemplates = async () => {
       try {
-        const response = await taskTemplateService.getAll<ServiceResponse>(); // API endpoint
+        const response = await taskTemplateService.getAll<ServiceResponse>();
         const templates = response.data.map((item: any) => ({
           value: item.title,
           label: item.title,
-          price: item.price || 0
+          items: item.items || [],
+          price: item.price || 0,
         }));
         setTaskTemplates(templates);
       } catch (error) {
         console.error("Error fetching task templates:", error);
-      } finally {
       }
     };
 
     fetchTaskTemplates();
   }, []);
+
   useEffect(() => {
     if (editItem) {
       setFormData({
@@ -106,6 +107,7 @@ const EmployeeCreateWork = ({
           deadline: new Date(body.deadline),
           assignedTo: parseInt(formData.assignedTo),
           price: parseInt(body.price),
+          incidentalCosts: parseInt(body.incidentalCosts),
         });
         toast.success("Tạo task thành công");
         setFormData(initialData);
@@ -136,11 +138,21 @@ const EmployeeCreateWork = ({
 
   const handleTitleChange = (selectedValue: any) => {
     if (selectedValue && selectedValue === "Khác") {
-      setShowCustomTitleInput(true); // Hiển thị input nếu chọn "Khác"
-      setFormData({ ...formData, title: "" }); // Xóa giá trị title hiện tại
+      setShowCustomTitleInput(true);
+      setFormData({ ...formData, title: "", items: [], price: 0 });
     } else {
-      setShowCustomTitleInput(false); // Ẩn input nếu chọn giá trị khác
-      setFormData({ ...formData, title: selectedValue }); // Cập nhật title từ combo box
+      const selectedTemplate = taskTemplates.find(
+        (template) => template.value === selectedValue
+      );
+      if (selectedTemplate) {
+        setShowCustomTitleInput(false);
+        setFormData({
+          ...formData,
+          title: selectedValue,
+          items: selectedTemplate.items || [],
+          price: selectedTemplate.price || 0,
+        });
+      }
     }
 
     // Reset lỗi cho trường tiêu đề
@@ -151,6 +163,7 @@ const EmployeeCreateWork = ({
       }));
     }
   };
+
   const addItem = () => {
     setFormData({
       ...formData,
@@ -171,35 +184,6 @@ const EmployeeCreateWork = ({
     setFormData({ ...formData, items: updatedItems });
   };
 
-  const getListEmployee = async () => {
-    try {
-      const param: IPagingParam = {
-        pageSize: 1000,
-        pageNumber: 1,
-        conditions: [
-          {
-            key: "role",
-            condition: "equal",
-            value: "EMPLOYEE",
-          },
-        ],
-        searchKey: "",
-        searchFields: [],
-        includeReferences: {},
-        sortOrder: "createdAt desc",
-      };
-      const res = await UserService.getPaging<ServiceResponse>(param);
-
-      setEmployees(res.data.data || []);
-    } catch (error: any) {
-      handleErrorHttp(error?.payload);
-    }
-  };
-
-  useEffect(() => {
-    getListEmployee();
-  }, []);
-
   return (
     <div className="nc-CartPage">
       <main className="">
@@ -214,10 +198,7 @@ const EmployeeCreateWork = ({
                 value={taskTemplates.find(
                   (option) => option.value === formData.title
                 )}
-                onChange={(e: any) => {
-                  handleTitleChange(e.value);
-                  setFormData({ ...formData, price: e.price });
-                }}
+                onChange={(e: any) => handleTitleChange(e.value)}
                 className="mt-1"
                 options={taskTemplates}
                 placeholder="-- Chọn công việc --"
@@ -235,10 +216,23 @@ const EmployeeCreateWork = ({
                 <span className="text-red-500">{errors.title}</span>
               )}
             </label>
+
+            {/* Nhân viên (luôn là user đăng nhập)
+            <label className="block">
+              <span className="text-neutral-800 dark:text-neutral-200">
+                Nhân viên
+              </span>
+              <Input
+                value={userStore.user.fullName}
+                disabled
+                className="mt-1 w-full"
+              />
+            </label> */}
+
             {/* Chi phí */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
-                Chi phí phát sinh nếu có
+                Chi phí Dịch Vụ
               </span>
               <Input
                 value={formData.price}
@@ -251,7 +245,18 @@ const EmployeeCreateWork = ({
                 <span className="text-red-500">{errors.price}</span>
               )}
             </label>
-
+            <label className="block">
+              <span className="text-neutral-800 dark:text-neutral-200">
+                Chi phí phát sinh
+              </span>
+              <Input
+                value={formData.incidentalCosts || 0}
+                onChange={changeData("incidentalCosts")}
+                className="mt-1"
+                name="incidentalCosts"
+                type="number"
+              />
+            </label>
             {/* Hạn hoàn thành */}
             <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
@@ -270,7 +275,7 @@ const EmployeeCreateWork = ({
             </label>
 
             {/* Địa chỉ */}
-            <label className="block">
+            {/* <label className="block">
               <span className="text-neutral-800 dark:text-neutral-200">
                 Địa chỉ
               </span>
@@ -284,7 +289,7 @@ const EmployeeCreateWork = ({
               {errors.address && (
                 <span className="text-red-500">{errors.address}</span>
               )}
-            </label>
+            </label> */}
 
             {/* Mô tả */}
             <label className="block">
@@ -302,11 +307,13 @@ const EmployeeCreateWork = ({
                 <span className="text-red-500">{errors.description}</span>
               )}
             </label>
+
+            {/* Danh sách công việc */}
             <div className="block">
               <span className="text-neutral-800 dark:text-neutral-200 block font-medium mb-2">
                 Danh sách công việc
               </span>
-              {formData?.items?.length > 0 ? (
+              {formData.items && formData.items.length > 0 ? (
                 formData.items.map((item: any, index: number) => (
                   <div key={index} className="flex items-center mb-2">
                     <span className="w-4 text-gray-500 mr-2">{index + 1}.</span>
@@ -316,6 +323,7 @@ const EmployeeCreateWork = ({
                       className="mr-2 flex-1"
                     />
                     <button
+                      type="button"
                       onClick={() => removeItem(index)}
                       className="text-red-500 hover:text-red-700"
                     >

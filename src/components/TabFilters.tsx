@@ -21,7 +21,7 @@ const DATA_sortOrderRadios = [
 const TabFilters = ({ activeTab, filter, setFilter }: any) => {
   const [isOpenMoreFilter, setIsOpenMoreFilter] = useState(false);
 
-  const { data: listCategory } = useGetData("brand/all");
+  const { data: listCategory = [] } = useGetData("brand/all") as { data: { id: number; name: string }[] };
   const [rangePrices, setRangePrices] = useState([0, 5000000000]);
   const [categoriesState, setCategoriesState] = useState<string[]>([]);
   const [sortOrderStates, setSortOrderStates] = useState<string>("");
@@ -33,10 +33,22 @@ const TabFilters = ({ activeTab, filter, setFilter }: any) => {
     if (isOpenMoreFilter) {
       setSortOrderStates(filter.sort);
       setRangePrices([filter.minPrice || 0, filter.maxPrice || PRICE_RANGE[1]]);
-      setCategoriesState(filter.categories);
+      // Sửa đoạn này để convert từ id sang object { value, label }
+      if (Array.isArray(filter.categories) && listCategory) {
+        setCategoriesState(
+          filter.categories
+            .map((catId: any) => {
+              const found = listCategory.find((x: any) => x.id === (catId.value ?? catId));
+              return found ? { value: found.id, label: found.name } : null;
+            })
+            .filter(Boolean)
+        );
+      } else {
+        setCategoriesState([]);
+      }
       setSortOrderStates(filter.sort);
     }
-  }, [isOpenMoreFilter]);
+  }, [isOpenMoreFilter, listCategory]);
 
   const renderXClear = () => {
     return (
@@ -74,7 +86,7 @@ const TabFilters = ({ activeTab, filter, setFilter }: any) => {
           onChange={(selected: any) => setCategoriesState(selected)}
           placeholder="Chọn loại hãng xe..."
           className="custom-select"
-        ></Select>
+        />
       </div>
     );
   };
@@ -398,21 +410,15 @@ const TabFilters = ({ activeTab, filter, setFilter }: any) => {
                     </ButtonThird>
                     <ButtonPrimary
                       onClick={() => {
-                        console.log({
-                          ...filter,
-                          sort: sortOrderStates,
-                          maxPrice: rangePrices[1],
-                          minPrice: rangePrices[0],
-                          categories: categoriesState,
-                          partTypes: selectedPartTypes,
-                        });
                         setFilter({
                           ...filter,
                           sort: sortOrderStates,
                           maxPrice: rangePrices[1],
                           minPrice: rangePrices[0],
-                          categories: categoriesState || [],
-                          partTypes: selectedPartTypes || [],
+                          // Lấy value cho categories (hãng xe)
+                          categories: (categoriesState || []).map((x: any) => x.value ?? x),
+                          // Lấy value cho partTypes (loại phụ tùng)
+                          partType: (selectedPartTypes || []).map((x: any) => x.value ?? x),
                         });
                         closeModalMoreFilter();
                       }}

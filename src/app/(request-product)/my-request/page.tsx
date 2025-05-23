@@ -177,7 +177,7 @@ const Myrequest = ({ idRequest, callback = () => { } }: any) => {
   };
   const getPriceArisen = (task: any) => {
     const priceArisen = task?.TaskDetail?.reduce(
-      (acc: number, taskDetail: any) => acc + taskDetail.price,
+      (acc: number, taskDetail: any) => acc + taskDetail.incidentalCosts,
       0
     );
     return priceArisen;
@@ -200,20 +200,7 @@ const Myrequest = ({ idRequest, callback = () => { } }: any) => {
         key={index}
         className={`${request?.id == idNoty ? "bg-green-200" : ""}`}
       >
-        <td key={index} className="p-4 border-b border-blue-gray-50">
-          <div className="flex items-center gap-3 min-w-[30px]">
-            <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
-              {request.id}
-            </p>
-          </div>
-        </td>
-        <td key={index} className="p-4 border-b border-blue-gray-50">
-          <div className="flex items-center gap-3 min-w-[100px]">
-            <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
-              {request?.user?.fullName}
-            </p>
-          </div>
-        </td>
+        
         <td key={index} className="p-4 border-b border-blue-gray-50">
           <div className="flex items-center gap-3 min-w-[100px]">
             <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
@@ -252,7 +239,7 @@ const Myrequest = ({ idRequest, callback = () => { } }: any) => {
           <Status
             text={
               request.status == RequestStatus.APPROVED && !request.isUserConfirm
-                ? "Người dùng xác nhận giá"
+                ? "Người dùng xác nhận"
                 : getRequestProductStatusText(request.status)
             }
             color={getRequestProductStatusColor(request.status)}
@@ -271,8 +258,7 @@ const Myrequest = ({ idRequest, callback = () => { } }: any) => {
                 />
               )}
             {request.status !== RequestStatus.REJECTED &&
-              request.status !== RequestStatus.PENDING &&
-              request.isUserConfirm && (
+              request.status !== RequestStatus.PENDING && (
                 <ButtonIcon
                   onClick={() => {
                     setOpenModalWork(false); // Đảm bảo đóng modal trước
@@ -400,16 +386,7 @@ const Myrequest = ({ idRequest, callback = () => { } }: any) => {
               <table className="w-full min-w-full table-auto text-left">
                 <thead>
                   <tr>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        ID
-                      </p>
-                    </th>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Người tạo
-                      </p>
-                    </th>
+                    
                     <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
                       <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
                         Thời gian tạo

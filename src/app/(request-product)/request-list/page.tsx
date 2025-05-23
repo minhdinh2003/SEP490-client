@@ -99,10 +99,8 @@ const RequestList = () => {
                 {
                   OR: [
                     {
-                      user: {
-                        fullName: {
-                          contains: searchKeyword,
-                        },
+                      updatedBy: {
+                        contains: searchKeyword,
                       },
                     },
                     {
@@ -227,7 +225,7 @@ const RequestList = () => {
         <td key={index} className="p-4 border-b border-blue-gray-50">
           <div className="flex items-center gap-3 min-w-[90px]">
             <p className="block antialiased font-sans text-sm leading-normal text-blue-gray-900 ">
-              {request?.user.fullName}
+              {request?.createdBy}
             </p>
           </div>
         </td>
@@ -399,7 +397,7 @@ const RequestList = () => {
           <Input
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
-            placeholder="Tìm kiếm theo tên hoặc số điện thoại"
+            placeholder="Tìm kiếm theo người tạo hoặc số điện thoại"
             className="w-[600px]"
           />
           {/* <ButtonPrimary
@@ -416,61 +414,63 @@ const RequestList = () => {
 
       <main className="  ">
         {(finalList as any)?.length > 0 ? (
-          <div className="flex  bg-white">
-            <div className="px-0">
-              <table className="w-full min-w-full table-auto text-left">
-                <thead>
-                  <tr>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Người tạo
-                      </p>
-                    </th>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        SĐT
-                      </p>
-                    </th>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Thời gian tạo
-                      </p>
-                    </th>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Mô tả
-                      </p>
-                    </th>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Hình thức sửa
-                      </p>
-                    </th>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Giá thỏa thuận
-                      </p>
-                    </th>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Chi phí phát sinh
-                      </p>
-                    </th>
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Trạng Thái
-                      </p>
-                    </th>
+          <div className="w-full bg-white">
+            <div className="px-0 w-full">
+              <div className="overflow-x-auto w-full">
+                <table className="w-full min-w-[1200px] table-auto text-left">
+                  <thead>
+                    <tr>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          Người tạo
+                        </p>
+                      </th>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          SĐT
+                        </p>
+                      </th>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          Thời gian tạo
+                        </p>
+                      </th>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          Mô tả
+                        </p>
+                      </th>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          Hình thức sửa
+                        </p>
+                      </th>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          Giá thỏa thuận
+                        </p>
+                      </th>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          Chi phí phát sinh
+                        </p>
+                      </th>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          Trạng Thái
+                        </p>
+                      </th>
 
-                    <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
-                      <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
-                        Hành động
-                      </p>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>{renderListTable()}</tbody>
-              </table>
+                      <th className="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4">
+                        <p className="block antialiased font-sans text-sm text-blue-gray-900 font-normal leading-none opacity-70">
+                          Hành động
+                        </p>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>{renderListTable()}</tbody>
+                </table>
+              </div>
             </div>
           </div>
         ) : (
@@ -538,7 +538,7 @@ const RequestList = () => {
         )}
         modalTitle="Danh sách công việc"
       />
-      
+
       <NcModal
         isOpenProp={confirmPayModal}
         onCloseModal={() => {
@@ -555,7 +555,7 @@ const RequestList = () => {
                 onClick={() => {
                   setConfirmPayModal(false);
                   setSelectedRequest(null);
-                  window.location.reload(); 
+                  window.location.reload();
                 }}
               >
                 Hủy
