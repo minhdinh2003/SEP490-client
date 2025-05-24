@@ -13,10 +13,11 @@ import { useRouter } from "next/navigation";
 import { formatPriceVND, getUrlImage } from "@/utils/helpers";
 import { Avatar, Button } from "antd";
 import ProductCard from "@/components/ProductCard";
+import useAuthStore from "@/store/useAuthStore";
 
 const CartPage = () => {
   const cartStore = useCartStore();
-  const { cart, removeItemFromCart, updateCart } = cartStore;
+  const { cart } = cartStore;
   const checkoutStore: any = useCheckoutStore();
   const router = useRouter();
 
@@ -45,9 +46,11 @@ const CartPage = () => {
       </div>
     );
   };
+  const userStore: any = useAuthStore();
+  const { user } = userStore;
   const handleDeleteCart = async (id: number | string) => {
     try {
-      cartStore.removeItemFromCart(id);
+      cartStore.removeItemFromCart(id, user?.id);
     } catch (error: any) {
       handleErrorHttp(error?.payload);
     }
@@ -57,10 +60,10 @@ const CartPage = () => {
       return;
     }
     try {
-      await updateCart({
-        CartItemID: cartId,
-        Quantity: quantity,
-      });
+      // await updateCart({
+      //   CartItemID: cartId,
+      //   Quantity: quantity,
+      // });
     } catch (error: any) {
       handleErrorHttp(error?.payload);
     }

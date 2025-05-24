@@ -61,17 +61,17 @@ const BlogDetailsPage = () => {
 
   return (
     <>
-      <section className="pb-[120px] pt-[30px]">
+      <section className="pb-[10px] pt-[30px]">
         <div className="container mx-auto">
           {/* Sử dụng CSS Grid để tạo layout */}
           <div className="flex  relative">
             {/* Cột trái: Quảng cáo (Sticky) */}
-            <div className="flex hidden md:block h-full relative ">
+            <div className="flex hidden md:block h-full relative sticky top-[70px]">
               <Image
                 src="/advertisement_1.jpg" // Đường dẫn đến hình ảnh quảng cáo
                 alt="Quảng cáo trái"
                 width={100} // Kích thước chiều rộng
-                height={500} // Kích thước chiều cao
+                height={700} // Kích thước chiều cao
                 className="w-full h-auto rounded-lg shadow-lg h-[500px] sticky"
               />
             </div>
@@ -112,12 +112,12 @@ const BlogDetailsPage = () => {
             </div>
 
             {/* Cột phải: Quảng cáo (Sticky) */}
-            <div className="hidden md:block sticky top-[100px]">
+            <div className="flex hidden md:block h-full relative sticky top-[70px]">
               <Image
                 src="/advertisement_2.jpg" // Đường dẫn đến hình ảnh quảng cáo
                 alt="Quảng cáo phải"
                 width={100} // Kích thước chiều rộng
-                height={300} // Kích thước chiều cao
+                height={700} // Kích thước chiều cao
                 className="w-full h-auto rounded-lg shadow-lg h-[500px]"
               />
             </div>

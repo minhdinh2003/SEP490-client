@@ -77,20 +77,12 @@ const Footer: React.FC = () => {
   };
 
   return (
-    <div className="relative py-20 border-t nc-Footer lg:pt-28 lg:pb-24 border-neutral-200 dark:border-neutral-700">
+    <div className="relative py-5 border-t nc-Footer lg:pt-28 lg:pb-12 border-neutral-200 dark:border-neutral-700">
       <div className="container grid grid-cols-2 gap-y-10 gap-x-5 sm:gap-x-8 md:grid-cols-4 lg:grid-cols-5 lg:gap-x-10 ">
         <div className="grid grid-cols-4 col-span-2 gap-5 md:col-span-4 lg:md:col-span-1 lg:flex lg:flex-col">
           <div className="col-span-2 md:col-span-1">
             <Link href={"/"}>
               <div className="flex items-center justify-center">
-                {/* <Image
-                  className="mr-1"
-                  width={27}
-                  height={27}
-                  alt=""
-                  src={"/book8.svg"}
-                />
-                <span className="text-2xl font-bold">Booden</span> */}
                 <Logo />
               </div>
             </Link>

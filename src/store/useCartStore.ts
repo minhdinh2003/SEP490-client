@@ -4,17 +4,22 @@ import { create } from "zustand";
 import WhiteListService from "@/http/whiteListService";
 import { ServiceResponse } from "@/type/service.response";
 import { IPagingParam } from "@/contains/paging";
+import useAuthStore from "./useAuthStore";
 const useCartStore = create((set: any, get: any) => ({
   cart: [],
   product: {},
   openModal: false,
   total: 0,
-  getListCart: async () => {
+  getListCart: async (userId: any) => {
     try {
       const param: IPagingParam = {
         pageSize: 1000,
         pageNumber: 1,
-        conditions: [ ],
+        conditions: [{
+          key: "userId",
+          condition: "equal",
+          value: userId,
+        }],
         searchKey: "",
         searchFields: [],
         includeReferences: {
@@ -37,29 +42,18 @@ const useCartStore = create((set: any, get: any) => ({
     try {
       const res = await WhiteListService.post<ServiceResponse>("", body);
       if (res?.success) {
-        await get().getListCart()
+        await get().getListCart(body.userId);
       }
     } catch (error) {
       throw error;
 
     }
   },
-  removeItemFromCart: async (id: any) => {
+  removeItemFromCart: async (id: any, userId: any) => {
     try {
       const res = await WhiteListService.deleteById<ServiceResponse>(id);
       if (res?.success) {
-        await get().getListCart()
-      }
-    } catch (error) {
-      throw error;
-
-    }
-  },
-  updateCart: async (body: any) => {
-    try {
-      const res = await http.post<any>("Cart/updateCartItem", body);
-      if (res?.payload?.Success) {
-        await get().getListCart()
+        await get().getListCart(userId)
       }
     } catch (error) {
       throw error;

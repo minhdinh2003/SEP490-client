@@ -10,13 +10,16 @@ import useCartStore from "@/store/useCartStore";
 import { handleErrorHttp } from "@/utils/handleError";
 import { useRouter } from "next/navigation";
 import { getUrlImage } from "@/utils/helpers";
+import useAuthStore from "@/store/useAuthStore";
 
 export default function CartDropdown() {
-  const router = useRouter()
+  const router = useRouter();
   const cartStore = useCartStore();
+  const userStore: any = useAuthStore();
+  const { user } = userStore;
   const handleDeleteCart = async (id: number | string) => {
     try {
-      cartStore.removeItemFromCart(id);
+      cartStore.removeItemFromCart(id, user?.id);
     } catch (error: any) {
       handleErrorHttp(error?.payload);
     }
@@ -25,9 +28,14 @@ export default function CartDropdown() {
   const totalPriceCart = cartStore?.cart.reduce((total: number, item: any) => {
     return (total += item.Price * item.Quantity);
   }, 0);
-  const renderProduct = (id: any, item: any, index: number, close: () => void) => {
+  const renderProduct = (
+    id: any,
+    item: any,
+    index: number,
+    close: () => void
+  ) => {
     const { name, price, listImage } = item;
-    const finalImage = getUrlImage(listImage)
+    const finalImage = getUrlImage(listImage);
     return (
       <div key={index} className="flex py-5 last:pb-0">
         <div className="relative h-24 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100">
@@ -37,11 +45,7 @@ export default function CartDropdown() {
             alt={name}
             className="h-full w-full object-contain object-center"
           />
-          <div
-            onClick={close}
-            className="absolute inset-0"
-           
-          />
+          <div onClick={close} className="absolute inset-0" />
         </div>
 
         <div className="ml-4 flex flex-1 flex-col justify-center">
@@ -49,9 +53,7 @@ export default function CartDropdown() {
             <div className="flex justify-between ">
               <div>
                 <h3 className="text-base font-medium ">
-                  <div onClick={close} >
-                    {name}
-                  </div>
+                  <div onClick={close}>{name}</div>
                   {/* <p className="text-gray-500 dark:text-slate-400">{`x${Quantity}`}</p> */}
                 </h3>
               </div>
@@ -146,7 +148,9 @@ export default function CartDropdown() {
                 <div className="overflow-hidden rounded-2xl shadow-lg ring-1 ring-black/5 dark:ring-white/10">
                   <div className="relative bg-white dark:bg-neutral-800">
                     <div className="max-h-[60vh] p-5 overflow-y-auto hiddenScrollbar">
-                      <h3 className="text-xl font-semibold">Danh sách yêu thích</h3>
+                      <h3 className="text-xl font-semibold">
+                        Danh sách yêu thích
+                      </h3>
                       <div className="divide-y divide-slate-100 dark:divide-slate-700">
                         {cartStore.cart.map((item: any, index) =>
                           renderProduct(item.id, item.product, index, close)
@@ -168,11 +172,12 @@ export default function CartDropdown() {
                 </div>
               ) : (
                 <Link href={"/collection"}>
-
-                <div className="overflow-hidden rounded-2xl shadow-lg ring-1 ring-black/5 dark:ring-white/10 flex flex-col p-4 justify-center items-center">
-                  Danh sách yêu thích trống
-                  <div className=" cursor-pointer mt-5 text-sm  bg-black  text-[white] p-3 rounded-full">Đi tới cửa hàng</div>
-                </div>
+                  <div className="overflow-hidden rounded-2xl shadow-lg ring-1 ring-black/5 dark:ring-white/10 flex flex-col p-4 justify-center items-center">
+                    Danh sách yêu thích trống
+                    <div className=" cursor-pointer mt-5 text-sm  bg-black  text-[white] p-3 rounded-full">
+                      Đi tới cửa hàng
+                    </div>
+                  </div>
                 </Link>
               )}
             </Popover.Panel>

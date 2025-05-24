@@ -30,14 +30,14 @@ export const NAVIGATION_DEMO_2: NavItemType[] = [
     href: "/",
     name: "Trang chủ",
     children: LIST_CATEGORY_PRODUCT,
-    role: ["USER", "ADMIN", "OWNER"]
+    role: ["USER", "ADMIN", "OWNER", "GUEST"]
   },
   {
     id: ncNanoId(),
     href: "/collection",
     name: "Sản phẩm",
     children: LIST_CATEGORY_PRODUCT,
-    role: ["USER", "ADMIN", "OWNER"]
+    role: ["USER", "ADMIN", "OWNER", "GUEST"]
   },
   {
     id: ncNanoId(),
@@ -61,7 +61,7 @@ export const NAVIGATION_DEMO_2: NavItemType[] = [
     id: ncNanoId(),
     href: "/promotion",
     name: "Khuyến mại",
-    role: ["USER", "ADMIN", "OWNER"]
+    role: ["USER", "ADMIN", "OWNER", "GUEST"]
   },
   {
     id: ncNanoId(),

@@ -1,8 +1,4 @@
 "use client";
-import ProductCard from "@/components/ProductCard";
-import TabFilters from "@/components/TabFilters";
-import ButtonCircle from "@/shared/Button/ButtonCircle";
-import Input from "@/shared/Input/Input";
 import { handleErrorHttp } from "@/utils/handleError";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";

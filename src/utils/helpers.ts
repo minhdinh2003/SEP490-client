@@ -89,6 +89,19 @@ export const renderMessage = (notification: any) => {
     case "DONE_REQUEST_USER":
       message = "Đã hoàn thành xong task. Vui lòng thanh toán để nhận hàng";
       break;
+    case "PRODUCT_OWNER_DONE_REQUEST":
+      message = "Quản lý cửa hàng đã hoàn thành yêu cầu sửa chữa của bạn";
+      break;
+    case "USER_CONFIRM_REQUEST":
+      message = "Người dùng đã xác nhận yêu cầu sửa chữa của họ";
+      break;
+    case "OWNER_CREATE_ORDER_FOR_CUSTOMER":
+      message = "Quản lý cửa hàng đã tạo đơn hàng cho bạn";
+      break;
+    case "USER_CHAT_WITH_OWNER":
+    case "OWNER_CHAT_WITH_USER":
+      message = `${senderName} đã nhắn tin cho bạn`;
+      break;
     default:
       message = "Thông báo không xác định";
       path = "/";

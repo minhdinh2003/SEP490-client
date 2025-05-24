@@ -46,12 +46,12 @@ function RootLayout({
   const { getListCart } = useCartStore();
   const notyStore: any = useNotyStore();
   const { addNotification, notifications, setNotification } = notyStore;
-
+  const isLoginWeb = localStorage.getItem("isLogin");
   useEffect(() => {
     const isLogin = localStorage.getItem("isLogin");
     if (isLogin === "true") {
       userStore.getInfoUser();
-      getListCart();
+      getListCart(userStore?.user?.id);
     }
     
   }, []);
@@ -156,8 +156,8 @@ function RootLayout({
         <CommonClient />
 
         {/* Thêm component chat */}
-        {!isOwner && <CustomerChat />}
-        {isOwner && <OwnerChat />}
+        {isLoginWeb && !isOwner && <CustomerChat />}
+        {isLoginWeb && isOwner && <OwnerChat />}
 
         {!isNotFooter && <Footer />}
       </body>

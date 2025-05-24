@@ -252,6 +252,10 @@ const CheckoutPage = () => {
       toast.error("Vui lòng chọn địa chỉ giao hàng");
       return;
     }
+    if (!user?.phoneNumber || user.phoneNumber.trim() === "") {
+      toast.error("Vui lòng nhập số điện thoại");
+      return;
+    }
 
     try {
       const res = isFromRequest
@@ -372,9 +376,9 @@ const CheckoutPage = () => {
                 <span>Tổng</span>
                 <span>{formatPriceVND(totalprice)}</span>
               </div>
-              {discountedTotal !== null && selectedVoucher && (
+              {discountedTotal !== null && (
                 <div className="flex justify-between font-semibold text-green-600 text-base pt-2">
-                  <span>Voucher: {selectedVoucher.title}</span>
+                  <span>Tiền giảm giá</span>
                   <span>
                     -{formatPriceVND(totalprice - (discountedTotal || 0))}
                   </span>

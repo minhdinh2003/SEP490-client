@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { IoMdChatbubbles } from "react-icons/io"; // Biểu tượng chat
-import { BsFillCircleFill } from "react-icons/bs"; // Biểu tượng tròn đỏ để hiển thị số lượng tin nhắn chưa đọc
-import axios from "axios";
 import { IPagingParam } from "@/contains/paging";
 import chatService from "@/http/chatService";
 import { ServiceResponse } from "@/type/service.response";

@@ -29,6 +29,7 @@ import useCheckoutStore from "@/store/useCheckoutStorage";
 import { IPagingParam } from "@/contains/paging";
 import OrderService from "@/http/orderService";
 import { ServiceResponse } from "@/type/service.response";
+import Cookies from "js-cookie";
 
 const LIST_IMAGES_DEMO = [detail1JPG, detail2JPG, detail3JPG];
 
@@ -86,6 +87,7 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
     const response = await OrderService.getPaging<ServiceResponse>(param);
     setListOrder(response.data.data);
   };
+  const isLogin = userStore.isLogin as boolean;
   useEffect(() => {
     getListOrder();
   }, []);
@@ -230,6 +232,11 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
   // Get Product Detail
   const notifyAddTocart = async () => {
     try {
+      if (!isLogin) {
+        Cookies.remove("token", { path: "/" });
+        router.push("/login");
+        return;
+      }
       await cartStore.addItemToCart({
         productId: data?.id,
         userId: user.id,
@@ -323,14 +330,6 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
             </div>
           </label>
         </div>
-        {/* <div>
-          <label htmlFor="">
-            <div className="text-sm font-medium flex items-center">
-              Địa chỉ:
-              <span className="ml-1 font-semibold">{data?.address}</span>
-            </div>
-          </label>
-        </div> */}
         {!isQuickView && (
           <div className="flex flex-col space-y-1 gap-5 ">
             <div className="flex items-center justify-center bg-slate-100/70 dark:bg-slate-800/70 px-2 py-3 sm:p-3.5 rounded-full">
@@ -340,6 +339,11 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
               <ButtonPrimary
                 className="flex-1 flex-shrink-0"
                 onClick={() => {
+                  if (!isLogin) {
+                    Cookies.remove("token", { path: "/" });
+                    router.push("/login");
+                    return;
+                  }
                   if (Quantity > data?.inventory?.quantity) {
                     toast.error("Số lượng sản phẩm còn lại không đủ");
                     return;
@@ -398,7 +402,11 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
               {/* Group 1: Thông số cơ bản */}
               <div className="grid grid-cols-5 p-4 border-b">
                 <div className="col-span-1">
-                  <strong>Dung tích động cơ</strong>
+                  <strong>
+                    {data?.brands?.[0]?.id == 12
+                      ? "Công suất động cơ"
+                      : "Dung tích động cơ"}
+                  </strong>
                 </div>
                 <div className="col-span-1">
                   <strong>Nhiên liệu</strong>
@@ -407,7 +415,7 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
                   <strong>Hộp số</strong>
                 </div>
                 <div className="col-span-1">
-                  <strong>Chỉ số đồng hồ công tơ mét</strong>
+                  <strong>Số km đã đi</strong>
                 </div>
                 <div className="col-span-1">
                   <strong>Màu xe</strong>
@@ -458,7 +466,8 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
                 <div className="col-span-1">
                   <strong>% Sơn zin</strong>
                 </div>
-                <div className="col-span-2"></div>{" "}
+                <div className="col-span-2">
+                  <strong>Số chủ</strong></div>{" "}
                 {/* Empty column for alignment */}
               </div>
               <div className="grid grid-cols-5 p-4">
@@ -475,7 +484,8 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
                 <div className="col-span-1">
                   {data?.originalPaintPercentage || "N/A"}
                 </div>
-                <div className="col-span-2"></div>{" "}
+                <div className="col-span-2">
+                  {data?.ownerCount ?? "N/A"}</div>{" "}
                 {/* Empty column for alignment */}
               </div>
 
@@ -612,10 +622,11 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
                         key={index}
                         src={url}
                         alt={`Thumbnail ${index}`}
-                        className={`w-16 h-16 object-cover cursor-pointer rounded ${currentImageIndex === index
+                        className={`w-16 h-16 object-cover cursor-pointer rounded ${
+                          currentImageIndex === index
                             ? "border-2 border-blue-500"
                             : "opacity-70"
-                          }`}
+                        }`}
                         onClick={() => setCurrentImageIndex(index)}
                       />
                     ))}
@@ -648,12 +659,9 @@ const ProductDetailPage = ({ isQuickView = false, id }: any) => {
           <hr className="border-slate-200 dark:border-slate-700" />
           {!isQuickView &&
             listOrder?.length > 0 &&
-            listOrder.some(
-              (order: any) =>
-                Array.isArray(order.orderItems) &&
-                order.orderItems.length > 0 &&
-                order.orderItems[0].productId == finalId
-            ) && (
+            listOrder.findIndex(
+              (order: any) => order.orderItems[0].productId == finalId
+            ) >= 0 && (
               <FormReview
                 callback={() => setReget(reget + 1)}
                 ProductID={data?.id}

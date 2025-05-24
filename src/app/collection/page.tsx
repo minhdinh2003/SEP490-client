@@ -1,5 +1,4 @@
 "use client";
-
 import ProductCard from "@/components/ProductCard";
 import TabFilters from "@/components/TabFilters";
 import ButtonCircle from "@/shared/Button/ButtonCircle";
@@ -12,140 +11,134 @@ import ProductIdentifier from "./ProductIdentifier";
 import ProductService from "@/http/productService";
 import { ServiceResponse } from "@/type/service.response";
 import { IPagingParam } from "@/contains/paging";
-
-const PageCollection = () => {
+const PageCollection = (context: any) => {
   const [activeTab, setActiveTab] = useState(0);
   const router = useRouter();
   const searchParams = useSearchParams();
   const search = searchParams.get("search");
   const brand = searchParams.get("brand");
-
   const [text, setText] = useState(search || "");
   const [filter, setFilter] = useState({
     IsApproved: true,
-    search: search || "",
+    search,
+    sort: "",
     maxPrice: "",
     minPrice: "",
     categories: brand ? [parseInt(brand)] : [],
     partTypes: [],
   });
   const [data, setData] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-
-  // Tạo param paging, search bằng conditions thay vì searchKey
+  const [currentPage, setCurrentPage] = useState(1); // Trang hiện tại
+  const [totalPages, setTotalPages] = useState(1); // Tổng số trang
   const getParamPaging = (pageNumber: number): IPagingParam => {
     const param: IPagingParam = {
-      pageSize: 6,
-      pageNumber,
+      pageSize: 5, // Số mục trên mỗi trang
+      pageNumber: pageNumber, // Trang hiện tại
       conditions: [],
+      searchKey: text || "",
+      searchFields: ["name"],
       includeReferences: {
         inventory: true,
       },
+      sortOrder: filter.sort || "",
     };
 
-    const andConditions: any[] = [
-      { category: "CAR" }
+    var andConditions: any = [
+      {
+        category: "CAR", // Điều kiện mặc định cho category
+      },
     ];
 
+    // Nếu có danh sách categories, thêm điều kiện lọc brands
     if (filter.categories && filter.categories.length > 0) {
       andConditions.push({
         brands: {
           some: {
             id: {
-              in: filter.categories.map((x: any) =>
-                typeof x === "object" ? x.value : x
-              ),
+              in: filter.categories?.map((x: any) => x.value), // Lọc theo danh sách categories
             },
           },
         },
       });
     }
 
-    const minPrice = parseFloat(filter.minPrice as any);
-    const maxPrice = parseFloat(filter.maxPrice as any);
-    if (!isNaN(minPrice) && !isNaN(maxPrice)) {
+    // Chỉ thêm điều kiện price nếu cả minPrice và maxPrice đều tồn tại
+    if (
+      filter.minPrice !== undefined &&
+      filter.maxPrice !== undefined &&
+      typeof filter.minPrice === "number" &&
+      typeof filter.maxPrice === "number" &&
+      !isNaN(filter.minPrice) &&
+      !isNaN(filter.maxPrice)
+    ) {
       andConditions.push({
         price: {
-          gte: minPrice,
-          lte: maxPrice,
+          gte: filter.minPrice, // Giá lớn hơn hoặc bằng minPrice
+          lte: filter.maxPrice, // Giá nhỏ hơn hoặc bằng maxPrice
         },
       });
     }
 
-    // Thêm điều kiện search vào conditions
-    if (filter.search && filter.search.trim() !== "") {
-      andConditions.push({
-        name: {
-          contains: filter.search.trim()
-        }
-      });
+    if (andConditions.length > 0) {
+      param.conditions = [
+        {
+          key: "any",
+          condition: "raw",
+          value: {
+            AND: andConditions,
+          },
+        },
+      ];
     }
-
-    param.conditions = [
-      {
-        key: "any",
-        condition: "raw",
-        value: { AND: andConditions },
-      },
-    ];
 
     return param;
   };
-
   const getData = async (pageNumber: number = 1) => {
     try {
       const res = await ProductService.getPaging<ServiceResponse>(
-        getParamPaging(pageNumber)
+        getParamPaging(pageNumber) // Truyền pageNumber vào hàm getParamPaging
       );
-      setData(res.data?.data || []);
-      setCurrentPage(pageNumber);
-      setTotalPages(Math.ceil((res.data?.totalCount || 0) / 5));
+
+      let currentData = res.data?.data;
+      setData(currentData);
+
+      // Cập nhật tổng số trang
+      setTotalPages( Math.floor(res.data?.totalCount / 5 )+ 1);
     } catch (error: any) {
       handleErrorHttp(error?.payload);
     }
   };
-
-  // Khi filter thay đổi, luôn reset về trang 1 và lấy lại dữ liệu
   useEffect(() => {
-    setCurrentPage(1);
     getData(1);
   }, [filter]);
 
-  // Khi search param trên url thay đổi, cập nhật text và filter.search
   useEffect(() => {
-    if (search !== null) {
-      setText(search);
-      setFilter((prev) => ({ ...prev, search }));
-    }
+    setText(search!);
+    getData(1);
   }, [search]);
 
-  // Xử lý search khi bấm Enter hoặc click nút search
-  const handleSearch = () => {
-    setFilter((prev) => ({
-      ...prev,
-      search: text,
-    }));
-  };
-
+  useEffect(() => {
+    setFilter({ ...filter, search });
+  }, [search]);
   return (
-    <div className="nc-PageCollection">
+    <div className={`nc-PageCollection`}>
       <div className="container py-16 lg:pb-28 lg:pt-20 space-y-16 sm:space-y-20 lg:space-y-28">
         <div className="space-y-10 lg:space-y-14">
+          {/* HEADING */}
           <div className="max-w-screen-sm">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-semibold">
+            <h2 className="block text-2xl sm:text-3xl lg:text-4xl font-semibold">
               Tất cả sản phẩm
             </h2>
           </div>
-
           <TabPro activeTab={activeTab} setActiveTab={setActiveTab} />
           <hr className="border-slate-200 dark:border-slate-700" />
-
-          {activeTab === 0 ? (
+          {activeTab == 0 ? (
             <main>
               <div className="container">
                 <header
-                  style={{ marginTop: -90 }}
+                  style={{
+                    marginTop: -90,
+                  }}
                   className="max-w-2xl mx-auto -mt-10 flex flex-col lg:-mt-7"
                 >
                   <div className="relative w-full mb-5">
@@ -153,25 +146,26 @@ const PageCollection = () => {
                       htmlFor="search-input"
                       className="text-neutral-500 dark:text-neutral-300"
                     >
+                      {/* <span className="sr-only">Search all icons</span> */}
                       <Input
-                        value={text}
+                        value={text!}
                         onChange={(e) => setText(e.target.value)}
-                        className="shadow-lg border"
+                        className="shadow-lg  border"
                         id="search-input"
                         type="search"
-                        placeholder="Tên Xe"
+                        placeholder="Tên xe ô tô"
                         sizeClass="pl-14 py-5 pr-5 md:pl-16"
                         rounded="rounded-full"
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
-                            handleSearch();
+                            getData();
                           }
                         }}
                       />
                       <ButtonCircle
-                        onClick={handleSearch}
+                        onClick={() => getData()}
                         className="absolute right-2.5 top-1/2 transform -translate-y-1/2"
-                        size="w-11 h-11"
+                        size=" w-11 h-11"
                       >
                         <i className="las la-arrow-right text-xl"></i>
                       </ButtonCircle>
@@ -202,23 +196,26 @@ const PageCollection = () => {
                   </div>
                 </header>
               </div>
-
+              {/* TABS FILTER */}
               <TabFilters
                 activeTab={activeTab}
                 filter={filter}
                 setFilter={setFilter}
               />
 
+              {/* LOOP ITEMS */}
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-x-8 gap-y-10 mt-8 lg:mt-10">
                 {data?.map((item: any, index: number) => (
                   <ProductCard data={item} key={index} />
                 ))}
               </div>
 
+              {/* Phân trang */}
               <div className="flex items-center justify-center mt-8 space-x-2">
                 <button
                   onClick={() => {
                     if (currentPage > 1) {
+                      setCurrentPage(currentPage - 1);
                       getData(currentPage - 1);
                     }
                   }}
@@ -235,6 +232,7 @@ const PageCollection = () => {
                 <button
                   onClick={() => {
                     if (currentPage < totalPages) {
+                      setCurrentPage(currentPage + 1);
                       getData(currentPage + 1);
                     }
                   }}

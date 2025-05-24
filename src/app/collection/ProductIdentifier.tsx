@@ -6,133 +6,120 @@ import Input from "@/shared/Input/Input";
 import { handleErrorHttp } from "@/utils/handleError";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import TabPro from "./TabPro";
 import ProductService from "@/http/productService";
 import { ServiceResponse } from "@/type/service.response";
 import { IPagingParam } from "@/contains/paging";
-
-const ProductIdentifier = () => {
+const ProductIdentifier = (context: any) => {
   const [activeTab, setActiveTab] = useState(0);
   const router = useRouter();
   const searchParams = useSearchParams();
   const search = searchParams.get("search");
   const brand = searchParams.get("brand");
-
   const [text, setText] = useState(search || "");
+  const [currentPage, setCurrentPage] = useState(1); // Trang hiện tại
+  const [totalPages, setTotalPages] = useState(1); // Tổng số trang
   const [filter, setFilter] = useState({
     IsApproved: true,
-    search: search || "",
+    search,
+    sort: "",
     maxPrice: "",
     minPrice: "",
     categories: brand ? [parseInt(brand)] : [],
-    partType: [],
+    partTypes: [],
   });
   const [data, setData] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
-  // Tạo param paging, search bằng conditions thay vì searchKey
   const getParamPaging = (pageNumber: number): IPagingParam => {
     const param: IPagingParam = {
-      pageSize: 6,
-      pageNumber,
+      pageSize: 10,
+      pageNumber: pageNumber,
       conditions: [],
+      searchKey: text || "",
+      searchFields: ["name"],
       includeReferences: {
         inventory: true,
       },
+      sortOrder: filter.sort || "",
     };
-
-    const andConditions: any[] = [
-      { category: "PART" }
+    var andConditions: any = [
+      {
+        category: "PART", // Điều kiện mặc định cho category
+      },
     ];
-
+    // Nếu có danh sách categories, thêm điều kiện lọc brands
     if (filter.categories && filter.categories.length > 0) {
       andConditions.push({
         brands: {
           some: {
             id: {
-              in: filter.categories.map((x: any) =>
-                typeof x === "object" ? x.value : x
-              ),
+              in: filter.categories?.map((x: any) => x.value), // Lọc theo danh sách categories
             },
           },
         },
       });
     }
-    if (filter.partType && filter.partType.length > 0) {
-      andConditions.push({
-        partType: {
-          in: filter.partType.map((x: any) =>
-            typeof x === "object" ? x.value : x
-          ),
-        },
-      });
-    }
-    const minPrice = parseFloat(filter.minPrice as any);
-    const maxPrice = parseFloat(filter.maxPrice as any);
-    if (!isNaN(minPrice) && !isNaN(maxPrice)) {
+
+    // Chỉ thêm điều kiện price nếu cả minPrice và maxPrice đều tồn tại
+    if (
+      filter.minPrice !== undefined &&
+      filter.maxPrice !== undefined &&
+      typeof filter.minPrice === "number" &&
+      typeof filter.maxPrice === "number" &&
+      !isNaN(filter.minPrice) &&
+      !isNaN(filter.maxPrice)
+    ) {
       andConditions.push({
         price: {
-          gte: minPrice,
-          lte: maxPrice,
+          gte: filter.minPrice, // Giá lớn hơn hoặc bằng minPrice
+          lte: filter.maxPrice, // Giá nhỏ hơn hoặc bằng maxPrice
         },
       });
     }
-
-    // Thêm điều kiện search vào conditions
-    if (filter.search && filter.search.trim() !== "") {
+    if (filter.partTypes && filter.partTypes.length > 0) {
       andConditions.push({
-        name: {
-          contains: filter.search.trim()
-        }
+        partType: {
+          in: filter.partTypes?.map((x: any) => x.value), // Lọc theo danh sách categories
+        },
       });
     }
-
-    param.conditions = [
-      {
-        key: "any",
-        condition: "raw",
-        value: { AND: andConditions },
-      },
-    ];
+    if (andConditions.length > 0) {
+      param.conditions = [
+        {
+          key: "any",
+          condition: "raw",
+          value: {
+            AND: andConditions,
+          },
+        },
+      ];
+    }
 
     return param;
   };
-
   const getData = async (pageNumber: number = 1) => {
     try {
       const res = await ProductService.getPaging<ServiceResponse>(
         getParamPaging(pageNumber)
       );
-      setData(res.data?.data || []);
-      setCurrentPage(pageNumber);
-      setTotalPages(Math.ceil((res.data?.totalCount || 0) / 5));
+      let currentData = res.data?.data;
+      setData(currentData);
     } catch (error: any) {
       handleErrorHttp(error?.payload);
     }
   };
-
-  // Khi filter thay đổi, luôn reset về trang 1 và lấy lại dữ liệu
   useEffect(() => {
-    setCurrentPage(1);
     getData(1);
   }, [filter]);
 
-  // Khi search param trên url thay đổi, cập nhật text và filter.search
   useEffect(() => {
-    if (search !== null) {
-      setText(search);
-      setFilter((prev) => ({ ...prev, search }));
-    }
+    setText(search!);
+    getData(1);
   }, [search]);
 
-  // Xử lý search khi bấm Enter hoặc click nút search
-  const handleSearch = () => {
-    setFilter((prev) => ({
-      ...prev,
-      search: text,
-    }));
-  };
-
+  useEffect(() => {
+    setFilter({ ...filter, search });
+  }, [search]);
   return (
     <div className="space-y-10 lg:space-y-14">
       <main>
@@ -149,9 +136,9 @@ const ProductIdentifier = () => {
                 className="text-neutral-500 dark:text-neutral-300"
               >
                 <Input
-                  value={text}
+                  value={text!}
                   onChange={(e) => setText(e.target.value)}
-                  className="shadow-lg border"
+                  className="shadow-lg  border"
                   id="search-input"
                   type="search"
                   placeholder="Tên phụ tùng"
@@ -159,14 +146,14 @@ const ProductIdentifier = () => {
                   rounded="rounded-full"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      handleSearch();
+                      getData();
                     }
                   }}
                 />
                 <ButtonCircle
-                  onClick={handleSearch}
+                  onClick={() => getData()}
                   className="absolute right-2.5 top-1/2 transform -translate-y-1/2"
-                  size="w-11 h-11"
+                  size=" w-11 h-11"
                 >
                   <i className="las la-arrow-right text-xl"></i>
                 </ButtonCircle>
@@ -207,6 +194,7 @@ const ProductIdentifier = () => {
           <button
             onClick={() => {
               if (currentPage > 1) {
+                setCurrentPage(currentPage - 1);
                 getData(currentPage - 1);
               }
             }}
@@ -223,6 +211,7 @@ const ProductIdentifier = () => {
           <button
             onClick={() => {
               if (currentPage < totalPages) {
+                setCurrentPage(currentPage + 1);
                 getData(currentPage + 1);
               }
             }}

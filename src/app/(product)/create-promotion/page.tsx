@@ -58,26 +58,40 @@ const UploadPromotion = ({ editItem, callback = () => {} }: any) => {
       valid = false;
     }
 
+    // Lấy ngày hiện tại (chỉ tính ngày, không tính giờ)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     // Kiểm tra ngày bắt đầu
     if (!formData.startDate) {
       newErrors.startDate = "Ngày bắt đầu là bắt buộc";
       valid = false;
-    } 
-    // else if (new Date(formData.startDate) < new Date()) {
-    //   newErrors.startDate = "Ngày bắt đầu phải lớn hơn hoặc bằng ngày hiện tại";
-    //   valid = false;
-    // }
+    } else {
+      const startDate = new Date(formData.startDate);
+      startDate.setHours(0, 0, 0, 0);
+      if (startDate < today) {
+        newErrors.startDate = "Ngày bắt đầu phải từ hôm nay trở đi";
+        valid = false;
+      }
+    }
 
     // Kiểm tra ngày kết thúc
     if (!formData.endDate) {
       newErrors.endDate = "Ngày kết thúc là bắt buộc";
       valid = false;
-    } else if (
-      formData.startDate &&
-      new Date(formData.endDate) <= new Date(formData.startDate)
-    ) {
-      newErrors.endDate = "Ngày kết thúc phải lớn hơn ngày bắt đầu";
-      valid = false;
+    } else {
+      const endDate = new Date(formData.endDate);
+      endDate.setHours(0, 0, 0, 0);
+      const startDate = new Date(formData.startDate);
+      startDate.setHours(0, 0, 0, 0);
+      if (endDate <= startDate) {
+        newErrors.endDate = "Ngày kết thúc phải lớn hơn ngày bắt đầu ít nhất 1 ngày";
+        valid = false;
+      }
+      if (endDate < today) {
+        newErrors.endDate = "Ngày kết thúc không được là ngày quá khứ";
+        valid = false;
+      }
     }
 
     // Kiểm tra minUseRequest
@@ -114,10 +128,16 @@ const UploadPromotion = ({ editItem, callback = () => {} }: any) => {
     e.preventDefault();
     if (!validateForm()) return;
 
+    // Ép thời gian về 0h cho startDate và endDate
+    const startDate = new Date(formData.startDate);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(formData.endDate);
+    endDate.setHours(0, 0, 0, 0);
+
     const body = {
       ...formData,
-      startDate: new Date(formData.startDate),
-      endDate: new Date(formData.endDate),
+      startDate,
+      endDate,
       image: listImage,
       discountValue: parseInt(formData.discountValue),
       minUseAmount: parseInt(formData.minUseAmount),

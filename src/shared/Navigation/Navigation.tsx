@@ -10,7 +10,13 @@ function Navigation() {
   return (
     <ul className="nc-Navigation flex items-cente">
       {NAVIGATION_DEMO_2.filter((i:any) => {
-        if(!i.role?.includes(role)){
+        if (role == "EMPLOYEE"){
+           if(!i.role?.includes(role)) {
+            return false;
+           }
+           return true;
+        }
+        if(!i.role?.includes(role) && !i.role?.includes("GUEST") ) {
           return false;
         }
      return true;

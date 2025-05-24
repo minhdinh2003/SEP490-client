@@ -204,7 +204,7 @@ const RequestList = () => {
 
       toast.success("Tạo đơn hàng thành công");
       getListRequest();
-      window.location.reload();
+      // window.location.reload();
     } catch (error: any) {
       toast.error("Có lỗi xảy ra khi tạo đơn hàng");
     }
@@ -555,7 +555,7 @@ const RequestList = () => {
                 onClick={() => {
                   setConfirmPayModal(false);
                   setSelectedRequest(null);
-                  window.location.reload();
+                  // window.location.reload();
                 }}
               >
                 Hủy
